@@ -258,7 +258,7 @@ class AIInferenceService(private val context: Context) {
      * Update inference settings
      */
     fun updateSettings(settings: InferenceSettings) {
-        this.inferenceSettings = settings
+        context.inferenceSettings = settings
         
         // Restart inference if settings changed significantly
         if (isModelLoaded.get()) {
@@ -295,7 +295,7 @@ class AIInferenceService(private val context: Context) {
      * Initialize input/output buffers
      */
     private fun initializeBuffers() {
-        val interpreter = this.interpreter ?: return
+        val interpreter = context.interpreter ?: return
         
         // Input buffer: [1, height, width, channels]
         val inputShape = interpreter.getInputTensor(0).shape()
@@ -344,8 +344,8 @@ class AIInferenceService(private val context: Context) {
      * Run model inference
      */
     private fun runModelInference(inputBuffer: ByteBuffer): Array<Array<FloatArray>> {
-        val interpreter = this.interpreter ?: throw IllegalStateException("Interpreter not initialized")
-        val outputBuffer = this.outputBuffer ?: throw IllegalStateException("Output buffer not initialized")
+        val interpreter = context.interpreter ?: throw IllegalStateException("Interpreter not initialized")
+        val outputBuffer = context.outputBuffer ?: throw IllegalStateException("Output buffer not initialized")
         
         interpreter.run(inputBuffer, outputBuffer)
         return outputBuffer

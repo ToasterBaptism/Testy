@@ -9,7 +9,6 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {Provider} from 'react-redux';
 import {PersistGate} from 'redux-persist/integration/react';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 // Store
@@ -63,7 +62,6 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <Provider store={store}>
         <PersistGate loading={<LoadingScreen />} persistor={persistor}>
-          <GestureHandlerRootView style={{flex: 1}}>
             <SafeAreaProvider>
               <StatusBar
                 barStyle="dark-content"
@@ -162,7 +160,6 @@ const App: React.FC = () => {
                 </Stack.Navigator>
               </NavigationContainer>
             </SafeAreaProvider>
-          </GestureHandlerRootView>
         </PersistGate>
       </Provider>
     </ErrorBoundary>

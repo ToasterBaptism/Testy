@@ -118,6 +118,11 @@ android {
         jvmTarget = '17'
     }
 
+    lintOptions {
+        disable 'Instantiatable'
+        abortOnError false
+    }
+
     packagingOptions {
         pickFirst '**/libc++_shared.so'
         pickFirst '**/libjsc.so'

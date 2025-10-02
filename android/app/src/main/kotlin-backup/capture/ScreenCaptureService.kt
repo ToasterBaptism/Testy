@@ -85,8 +85,8 @@ class ScreenCaptureService(private val context: Context) {
      * Set media projection data from permission result
      */
     fun setMediaProjectionData(resultCode: Int, data: Intent) {
-        this.resultCode = resultCode
-        this.resultData = data
+        context.resultCode = resultCode
+        context.resultData = data
         Timber.d("Media projection data set")
     }
 
@@ -175,7 +175,7 @@ class ScreenCaptureService(private val context: Context) {
      * Update capture settings
      */
     fun updateSettings(settings: CaptureSettings) {
-        this.captureSettings = settings
+        context.captureSettings = settings
         
         // Apply settings if currently capturing
         if (isCapturing.get()) {

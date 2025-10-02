@@ -66,23 +66,6 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
         
-        <!-- Screen Capture Service -->
-        <service
-            android:name=".capture.ScreenCaptureService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="mediaProjection" />
-        
-        <!-- AI Inference Service -->
-        <service
-            android:name=".ai.AIInferenceService"
-            android:enabled="true"
-            android:exported="false" />
-        
-        <!-- Input Simulation Service -->
-        <service
-            android:name=".input.InputSimulationService"
-            android:enabled="true"
-            android:exported="false" />
+
     </application>
 </manifest>
