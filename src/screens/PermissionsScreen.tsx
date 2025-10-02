@@ -8,6 +8,7 @@ import {
   Alert,
   NativeModules,
 } from 'react-native';
+import {useFocusEffect} from '@react-navigation/native';
 
 const {PermissionsModule} = NativeModules;
 
@@ -17,11 +18,20 @@ interface PermissionStatus {
 
 const PermissionsScreen: React.FC = () => {
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>({});
+  const [accessibilityEnabled, setAccessibilityEnabled] = useState(false);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
 
   useEffect(() => {
     checkAllPermissions();
   }, []);
+
+  // Refresh permissions when screen comes into focus (user returns from settings)
+  useFocusEffect(
+    React.useCallback(() => {
+      checkAllPermissions();
+    }, [])
+  );
 
   const checkAllPermissions = async () => {
     try {
@@ -34,6 +44,25 @@ const PermissionsScreen: React.FC = () => {
       }
 
       setPermissionStatus(status);
+
+      // Check accessibility service status
+      try {
+        const {AccessibilityModule} = NativeModules;
+        const accessibilityStatus = await AccessibilityModule.isServiceEnabled();
+        setAccessibilityEnabled(accessibilityStatus);
+      } catch (error) {
+        console.error('Failed to check accessibility status:', error);
+        setAccessibilityEnabled(false);
+      }
+
+      // Check overlay permission status
+      try {
+        const overlayStatus = await PermissionsModule.checkOverlayPermission();
+        setOverlayEnabled(overlayStatus);
+      } catch (error) {
+        console.error('Failed to check overlay status:', error);
+        setOverlayEnabled(false);
+      }
     } catch (error) {
       console.error('Failed to check permissions:', error);
     }
@@ -87,11 +116,12 @@ const PermissionsScreen: React.FC = () => {
       if (!granted) {
         Alert.alert(
           'Overlay Permission',
-          'Please enable "Display over other apps" permission for FortniteAssist in the settings that just opened.',
-          [{text: 'OK'}]
+          'Please enable "Display over other apps" permission for FortniteAssist in the settings that just opened. Return to this screen to refresh the status.',
+          [{text: 'OK', onPress: () => checkAllPermissions()}]
         );
       } else {
         Alert.alert('Success', 'Overlay permission is already granted!');
+        setOverlayEnabled(true);
       }
     } catch (error) {
       console.error('Failed to request overlay permission:', error);
@@ -108,8 +138,8 @@ const PermissionsScreen: React.FC = () => {
       
       Alert.alert(
         'Accessibility Permission',
-        'Please enable FortniteAssist in the Accessibility settings that just opened. Look for "FortniteAssist" in the list and turn it on.',
-        [{text: 'OK'}]
+        'Please enable FortniteAssist in the Accessibility settings that just opened. Look for "FortniteAssist" in the list and turn it on. Return to this screen to refresh the status.',
+        [{text: 'OK', onPress: () => checkAllPermissions()}]
       );
     } catch (error) {
       console.error('Failed to request accessibility permission:', error);
@@ -228,6 +258,11 @@ const PermissionsScreen: React.FC = () => {
             {loading === 'accessibility' ? 'Opening Settings...' : 'Enable Accessibility'}
           </Text>
         </TouchableOpacity>
+        <View style={styles.statusContainer}>
+          <Text style={[styles.statusText, accessibilityEnabled ? styles.granted : styles.denied]}>
+            ACCESSIBILITY_SERVICE: {accessibilityEnabled ? '✓ Enabled' : '✗ Disabled'}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.permissionItem}>
@@ -246,6 +281,11 @@ const PermissionsScreen: React.FC = () => {
             {loading === 'overlay' ? 'Opening Settings...' : 'Enable Overlay'}
           </Text>
         </TouchableOpacity>
+        <View style={styles.statusContainer}>
+          <Text style={[styles.statusText, overlayEnabled ? styles.granted : styles.denied]}>
+            OVERLAY_PERMISSION: {overlayEnabled ? '✓ Enabled' : '✗ Disabled'}
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
