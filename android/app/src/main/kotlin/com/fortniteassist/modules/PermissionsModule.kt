@@ -151,11 +151,21 @@ class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBas
         try {
             val permissions = WritableNativeArray()
             permissions.pushString(Manifest.permission.RECORD_AUDIO)
-            permissions.pushString(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            permissions.pushString(Manifest.permission.READ_EXTERNAL_STORAGE)
             
+            // Use appropriate storage permissions based on Android version
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Android 13+ uses granular media permissions
+                permissions.pushString(Manifest.permission.READ_MEDIA_IMAGES)
+                permissions.pushString(Manifest.permission.READ_MEDIA_VIDEO)
+                permissions.pushString(Manifest.permission.READ_MEDIA_AUDIO)
                 permissions.pushString(Manifest.permission.POST_NOTIFICATIONS)
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // Android 11-12 uses scoped storage
+                permissions.pushString(Manifest.permission.READ_EXTERNAL_STORAGE)
+            } else {
+                // Android 10 and below
+                permissions.pushString(Manifest.permission.READ_EXTERNAL_STORAGE)
+                permissions.pushString(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
             
             promise.resolve(permissions)

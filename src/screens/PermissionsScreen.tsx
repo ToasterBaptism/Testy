@@ -25,15 +25,11 @@ const PermissionsScreen: React.FC = () => {
 
   const checkAllPermissions = async () => {
     try {
-      // Check standard permissions
-      const permissions = [
-        'android.permission.RECORD_AUDIO',
-        'android.permission.WRITE_EXTERNAL_STORAGE',
-        'android.permission.READ_EXTERNAL_STORAGE',
-      ];
-
+      // Get the required permissions for this Android version
+      const requiredPermissions = await PermissionsModule.getRequiredPermissions();
+      
       const status: PermissionStatus = {};
-      for (const permission of permissions) {
+      for (const permission of requiredPermissions) {
         status[permission] = await PermissionsModule.checkPermission(permission);
       }
 
@@ -46,13 +42,10 @@ const PermissionsScreen: React.FC = () => {
   const handleRequestStandardPermissions = async () => {
     try {
       setLoading('standard');
-      const permissions = [
-        'android.permission.RECORD_AUDIO',
-        'android.permission.WRITE_EXTERNAL_STORAGE',
-        'android.permission.READ_EXTERNAL_STORAGE',
-      ];
-
-      const results = await PermissionsModule.requestPermissions(permissions);
+      
+      // Get the required permissions for this Android version
+      const requiredPermissions = await PermissionsModule.getRequiredPermissions();
+      const results = await PermissionsModule.requestPermissions(requiredPermissions);
       setPermissionStatus(prev => ({...prev, ...results}));
       
       Alert.alert(
@@ -121,7 +114,7 @@ const PermissionsScreen: React.FC = () => {
       <View style={styles.permissionItem}>
         <Text style={styles.permissionTitle}>Standard Permissions</Text>
         <Text style={styles.permissionDescription}>
-          Audio recording, storage access, and notifications for core functionality.
+          Audio recording and media access for AI processing. Required permissions vary by Android version.
         </Text>
         <TouchableOpacity
           style={[styles.button, loading === 'standard' && styles.buttonDisabled]}

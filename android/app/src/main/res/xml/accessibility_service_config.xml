@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeAllMask"
-    android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows|flagReportViewIds|flagRequestTouchExplorationMode"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
+    android:accessibilityFlags="flagDefault"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:canRetrieveWindowContent="true"
+    android:canRetrieveWindowContent="false"
     android:canPerformGestures="true"
-    android:canRequestTouchExplorationMode="true"
-    android:canRequestFilterKeyEvents="true"
+    android:canRequestTouchExplorationMode="false"
+    android:canRequestFilterKeyEvents="false"
+    android:packageNames="com.epicgames.fortnite"
     android:description="@string/accessibility_service_description"
     android:settingsActivity="com.fortniteassist.MainActivity" />
