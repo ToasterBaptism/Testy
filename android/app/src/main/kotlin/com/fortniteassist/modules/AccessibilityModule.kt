@@ -39,6 +39,12 @@ class AccessibilityModule(reactContext: ReactApplicationContext) : ReactContextB
     }
 
     @ReactMethod
+    fun isServiceEnabled(promise: Promise) {
+        // Alias for backward compatibility
+        isAccessibilityServiceEnabled(promise)
+    }
+
+    @ReactMethod
     fun requestAccessibilityPermission(promise: Promise) {
         try {
             val intent = android.content.Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)

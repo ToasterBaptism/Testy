@@ -79,7 +79,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
       }
       
       // Check accessibility service
-      const accessibilityStatus = await AccessibilityModule.isServiceEnabled();
+      const accessibilityStatus = await AccessibilityModule.isAccessibilityServiceEnabled();
       
       // Check overlay permission (SYSTEM_ALERT_WINDOW)
       const overlayStatus = await PermissionsModule.checkPermission('android.permission.SYSTEM_ALERT_WINDOW');
@@ -93,6 +93,14 @@ const HomeScreen: React.FC<ScreenProps> = () => {
         accessibility: accessibilityStatus,
         overlay: overlayStatus
       });
+      
+      // Additional debugging for accessibility service
+      if (!accessibilityStatus) {
+        console.log('Accessibility service not enabled - user needs to enable it in settings');
+      }
+      if (!overlayStatus) {
+        console.log('Overlay permission not granted - user needs to enable it in settings');
+      }
     } catch (error) {
       console.error('Failed to check permissions:', error);
     }
@@ -252,7 +260,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
         
         <StatusIndicator
           label="Input Assistance"
-          status={accessibilityEnabled ? 'running' : 'error'}
+          status={accessibilityEnabled && overlayEnabled ? 'running' : (accessibilityEnabled ? 'stopped' : 'error')}
           accessibilityHint="Shows the status of input assistance service"
         />
         

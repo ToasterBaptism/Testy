@@ -44,7 +44,7 @@ class CompleteImplementationAPKHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
     
     def serve_main_page(self):
-        apk_path = '/workspace/project/Testy/fortnite-assist-complete-implementation.apk'
+        apk_path = '/workspace/project/Testy/fortnite-assist-permission-fixed.apk'
         
         if not os.path.exists(apk_path):
             self.send_error(404, "APK file not found")
@@ -259,7 +259,7 @@ class CompleteImplementationAPKHandler(BaseHTTPRequestHandler):
         <div class="header">
             <div class="logo">🎮 FortniteAssist</div>
             <div class="subtitle">Assistive Technology for Accessible Gaming</div>
-            <div class="version-badge">Complete Implementation v1.0</div>
+            <div class="version-badge">Permission Fixed v1.1</div>
         </div>
         
         <div class="apk-info">
@@ -320,7 +320,7 @@ class CompleteImplementationAPKHandler(BaseHTTPRequestHandler):
         self.wfile.write(html_content.encode('utf-8'))
     
     def serve_apk_download(self):
-        apk_path = '/workspace/project/Testy/fortnite-assist-complete-implementation.apk'
+        apk_path = '/workspace/project/Testy/fortnite-assist-permission-fixed.apk'
         
         if not os.path.exists(apk_path):
             self.send_error(404, "APK file not found")
