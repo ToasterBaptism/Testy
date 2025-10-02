@@ -45,7 +45,25 @@ const PermissionsScreen: React.FC = () => {
       
       // Get the required permissions for this Android version
       const requiredPermissions = await PermissionsModule.getRequiredPermissions();
-      const results = await PermissionsModule.requestPermissions(requiredPermissions);
+      
+      // Filter out POST_NOTIFICATIONS as it needs special handling
+      const standardPermissions = requiredPermissions.filter(
+        (permission: string) => permission !== 'android.permission.POST_NOTIFICATIONS'
+      );
+      
+      const results = await PermissionsModule.requestPermissions(standardPermissions);
+      
+      // Handle notification permission separately
+      if (requiredPermissions.includes('android.permission.POST_NOTIFICATIONS')) {
+        try {
+          const notificationGranted = await PermissionsModule.requestNotificationPermission();
+          results['android.permission.POST_NOTIFICATIONS'] = notificationGranted;
+        } catch (notificationError) {
+          console.error('Failed to request notification permission:', notificationError);
+          results['android.permission.POST_NOTIFICATIONS'] = false;
+        }
+      }
+      
       setPermissionStatus(prev => ({...prev, ...results}));
       
       Alert.alert(
@@ -101,6 +119,36 @@ const PermissionsScreen: React.FC = () => {
     }
   };
 
+  const handleRequestNotificationPermission = async () => {
+    try {
+      console.log('Requesting notification permission...');
+      setLoading('notification');
+      const granted = await PermissionsModule.requestNotificationPermission();
+      console.log('Notification permission result:', granted);
+      
+      // Update the permission status
+      setPermissionStatus(prev => ({
+        ...prev,
+        'android.permission.POST_NOTIFICATIONS': granted
+      }));
+      
+      if (granted) {
+        Alert.alert('Success', 'Notification permission granted!');
+      } else {
+        Alert.alert(
+          'Permission Required',
+          'Please allow notifications when prompted to receive important updates from FortniteAssist.',
+          [{text: 'OK'}]
+        );
+      }
+    } catch (error) {
+      console.error('Failed to request notification permission:', error);
+      Alert.alert('Error', `Failed to request notification permission: ${error.message || error}`);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} accessibilityLabel="Permissions screen">
       <Text style={styles.title} accessibilityRole="header">
@@ -137,6 +185,32 @@ const PermissionsScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* Show notification permission section only on Android 13+ */}
+      {permissionStatus['android.permission.POST_NOTIFICATIONS'] !== undefined && (
+        <View style={styles.permissionItem}>
+          <Text style={styles.permissionTitle}>Notification Permission</Text>
+          <Text style={styles.permissionDescription}>
+            Required to show important updates and status notifications from FortniteAssist.
+          </Text>
+          <TouchableOpacity
+            style={[styles.button, loading === 'notification' && styles.buttonDisabled]}
+            onPress={handleRequestNotificationPermission}
+            disabled={loading === 'notification'}
+            accessibilityRole="button"
+            accessibilityLabel="Request notification permission"
+          >
+            <Text style={styles.buttonText}>
+              {loading === 'notification' ? 'Requesting...' : 'Allow Notifications'}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.statusContainer}>
+            <Text style={[styles.statusText, permissionStatus['android.permission.POST_NOTIFICATIONS'] ? styles.granted : styles.denied]}>
+              POST_NOTIFICATIONS: {permissionStatus['android.permission.POST_NOTIFICATIONS'] ? '✓ Granted' : '✗ Denied'}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.permissionItem}>
         <Text style={styles.permissionTitle}>Accessibility Service</Text>

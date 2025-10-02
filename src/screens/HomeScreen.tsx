@@ -11,12 +11,15 @@ import {
   ScrollView,
   Alert,
   AccessibilityInfo,
+  NativeModules,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import type {NavigationProp} from '@react-navigation/native';
 import type {RootStackParamList} from '@/types/navigation';
+
+const {PermissionsModule, AccessibilityModule} = NativeModules;
 
 // Components
 import AccessibleButton from '@/components/AccessibleButton';
@@ -51,19 +54,56 @@ const HomeScreen: React.FC<ScreenProps> = () => {
   // State
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<{[key: string]: boolean}>({});
+  const [accessibilityEnabled, setAccessibilityEnabled] = useState(false);
+  const [overlayEnabled, setOverlayEnabled] = useState(false);
 
   // Selectors
   const isAssistanceActive = useSelector(selectIsAssistanceActive);
-  const allPermissionsGranted = useSelector(selectAllPermissionsGranted);
-  const canStartAssistance = useSelector(selectCanStartAssistance);
   const services = useSelector(selectServices);
   const performance = useSelector(selectPerformance);
   const lastDetection = useSelector(selectLastDetection);
   const settings = useSelector(selectSettings);
 
+  // Function to check all permissions
+  const checkAllPermissions = async () => {
+    try {
+      // Check standard permissions
+      const requiredPermissions = await PermissionsModule.getRequiredPermissions();
+      const permissionStatuses: {[key: string]: boolean} = {};
+      
+      // Check each required permission
+      for (const permission of requiredPermissions) {
+        const status = await PermissionsModule.checkPermission(permission);
+        permissionStatuses[permission] = status;
+      }
+      
+      // Check accessibility service
+      const accessibilityStatus = await AccessibilityModule.isServiceEnabled();
+      
+      // Check overlay permission (SYSTEM_ALERT_WINDOW)
+      const overlayStatus = await PermissionsModule.checkPermission('android.permission.SYSTEM_ALERT_WINDOW');
+      
+      setPermissionStatus(permissionStatuses);
+      setAccessibilityEnabled(accessibilityStatus);
+      setOverlayEnabled(overlayStatus);
+      
+      console.log('Permission check results:', {
+        permissions: permissionStatuses,
+        accessibility: accessibilityStatus,
+        overlay: overlayStatus
+      });
+    } catch (error) {
+      console.error('Failed to check permissions:', error);
+    }
+  };
+
   useEffect(() => {
     // Announce screen when it loads
     announceToUser('FortniteAssist Home Screen loaded');
+
+    // Check permissions when screen loads
+    checkAllPermissions();
 
     // Check if TalkBack is enabled and provide additional guidance
     AccessibilityInfo.isScreenReaderEnabled().then(isEnabled => {
@@ -77,25 +117,40 @@ const HomeScreen: React.FC<ScreenProps> = () => {
     });
   }, []);
 
+  // Refresh permissions when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      checkAllPermissions();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  // Check if all permissions are granted
+  const allPermissionsGranted = () => {
+    const standardPermissionsGranted = Object.values(permissionStatus).every(status => status);
+    return standardPermissionsGranted && accessibilityEnabled && overlayEnabled;
+  };
+
   /**
    * Handle start assistance
    */
   const handleStartAssistance = async () => {
-    if (!canStartAssistance) {
-      if (!allPermissionsGranted) {
-        Alert.alert(
-          'Permissions Required',
-          'Please grant all required permissions before starting assistance.',
-          [
-            {text: 'Cancel', style: 'cancel'},
-            {
-              text: 'Go to Permissions',
-              onPress: () => navigation.navigate('Permissions'),
-            },
-          ],
-        );
-        return;
-      }
+    // Refresh permission status before starting
+    await checkAllPermissions();
+    
+    if (!allPermissionsGranted()) {
+      Alert.alert(
+        'Permissions Required',
+        'Please grant all required permissions before starting assistance.',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Go to Permissions',
+            onPress: () => navigation.navigate('Permissions'),
+          },
+        ],
+      );
       return;
     }
 
@@ -197,13 +252,13 @@ const HomeScreen: React.FC<ScreenProps> = () => {
         
         <StatusIndicator
           label="Input Assistance"
-          status={services.inputSimulation}
+          status={accessibilityEnabled ? 'running' : 'error'}
           accessibilityHint="Shows the status of input assistance service"
         />
         
         <StatusIndicator
           label="Accessibility Service"
-          status={services.accessibility}
+          status={accessibilityEnabled ? 'running' : 'error'}
           accessibilityHint="Shows the status of accessibility service"
         />
       </View>
@@ -213,7 +268,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
         <AccessibleButton
           title={getMainButtonText()}
           onPress={isAssistanceActive ? handleStopAssistance : handleStartAssistance}
-          disabled={isStarting || isStopping || (!isAssistanceActive && !canStartAssistance)}
+          disabled={isStarting || isStopping || (!isAssistanceActive && !allPermissionsGranted())}
           style={[
             styles.mainButton,
             isAssistanceActive ? styles.stopButton : styles.startButton,
@@ -227,11 +282,9 @@ const HomeScreen: React.FC<ScreenProps> = () => {
           }
         />
 
-        {!canStartAssistance && !isAssistanceActive && (
+        {!allPermissionsGranted() && !isAssistanceActive && (
           <Text style={styles.warningText} accessibilityRole="alert">
-            {!allPermissionsGranted
-              ? 'Please grant all required permissions to start assistance'
-              : 'System not ready. Check status above.'}
+            Please grant all required permissions to start assistance
           </Text>
         )}
       </View>

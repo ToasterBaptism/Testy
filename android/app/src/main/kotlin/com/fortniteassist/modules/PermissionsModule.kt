@@ -147,6 +147,60 @@ class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBas
     }
 
     @ReactMethod
+    fun requestNotificationPermission(promise: Promise) {
+        try {
+            Timber.d("Requesting notification permission, Android version: ${Build.VERSION.SDK_INT}")
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Android 13+ requires runtime permission request
+                val activity = currentActivity
+                if (activity == null) {
+                    Timber.e("No current activity available for notification permission")
+                    promise.reject("NO_ACTIVITY", "No current activity available")
+                    return
+                }
+                
+                val permission = Manifest.permission.POST_NOTIFICATIONS
+                val currentStatus = ContextCompat.checkSelfPermission(reactApplicationContext, permission)
+                Timber.d("Current notification permission status: $currentStatus")
+                
+                if (currentStatus == PackageManager.PERMISSION_GRANTED) {
+                    Timber.d("Notification permission already granted")
+                    promise.resolve(true)
+                    return
+                }
+                
+                // Store promise for callback
+                permissionPromise = promise
+                
+                Timber.d("Requesting notification permission via system dialog")
+                
+                // Request notification permission
+                if (activity is PermissionAwareActivity) {
+                    activity.requestPermissions(
+                        arrayOf(permission),
+                        REQUEST_CODE_PERMISSIONS,
+                        this
+                    )
+                } else {
+                    ActivityCompat.requestPermissions(
+                        activity,
+                        arrayOf(permission),
+                        REQUEST_CODE_PERMISSIONS
+                    )
+                }
+            } else {
+                // Pre-Android 13, notifications are granted by default
+                Timber.d("Pre-Android 13, notification permission granted by default")
+                promise.resolve(true)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to request notification permission")
+            promise.reject("NOTIFICATION_ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
     fun getRequiredPermissions(promise: Promise) {
         try {
             val permissions = WritableNativeArray()
