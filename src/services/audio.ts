@@ -7,7 +7,7 @@ import Tts from 'react-native-tts';
 import Sound from 'react-native-sound';
 import {useSelector} from 'react-redux';
 import {selectSettings} from './store';
-import Timber from './logging';
+import logger from './logging';
 
 // Audio feedback types
 export enum AudioFeedbackType {
@@ -62,7 +62,7 @@ class AudioService {
    */
   async initialize(): Promise<void> {
     try {
-      Timber.info('Initializing audio service...');
+      logger.i("Audio", 'Initializing audio service...');
 
       // Initialize TTS
       await this.initializeTts();
@@ -71,9 +71,9 @@ class AudioService {
       await this.preloadSounds();
 
       this.isInitialized = true;
-      Timber.info('Audio service initialized successfully');
+      logger.i("Audio", 'Audio service initialized successfully');
     } catch (error) {
-      Timber.error('Failed to initialize audio service:', error);
+      logger.e("Audio", 'Failed to initialize audio service:', error);
       throw error;
     }
   }
@@ -107,9 +107,9 @@ class AudioService {
         this.processNextSpeech();
       });
 
-      Timber.debug('TTS initialized');
+      logger.d("Audio", 'TTS initialized');
     } catch (error) {
-      Timber.error('Failed to initialize TTS:', error);
+      logger.e("Audio", 'Failed to initialize TTS:', error);
       throw error;
     }
   }
@@ -123,7 +123,7 @@ class AudioService {
         return new Promise<void>((resolve, reject) => {
           const sound = new Sound(filename, Sound.MAIN_BUNDLE, (error) => {
             if (error) {
-              Timber.warn(`Failed to load sound ${filename}:`, error);
+              logger.w("Audio", `Failed to load sound ${filename}:`, error);
               resolve(); // Don't fail initialization for missing sounds
             } else {
               this.soundCache[type] = sound;
@@ -134,9 +134,9 @@ class AudioService {
       });
 
       await Promise.all(soundPromises);
-      Timber.debug(`Preloaded ${Object.keys(this.soundCache).length} sound effects`);
+      logger.d("Audio", `Preloaded ${Object.keys(this.soundCache).length} sound effects`);
     } catch (error) {
-      Timber.error('Failed to preload sounds:', error);
+      logger.e("Audio", 'Failed to preload sounds:', error);
       // Don't throw - app can work without sound effects
     }
   }
@@ -146,7 +146,7 @@ class AudioService {
    */
   async playAudioFeedback(type: AudioFeedbackType, customMessage?: string): Promise<void> {
     if (!this.isInitialized) {
-      Timber.warn('Audio service not initialized');
+      logger.w("Audio", 'Audio service not initialized');
       return;
     }
 
@@ -165,7 +165,7 @@ class AudioService {
         await this.speak(message);
       }
     } catch (error) {
-      Timber.error('Failed to play audio feedback:', error);
+      logger.e("Audio", 'Failed to play audio feedback:', error);
     }
   }
 
@@ -175,14 +175,14 @@ class AudioService {
   private async playSoundEffect(type: AudioFeedbackType): Promise<void> {
     const sound = this.soundCache[type];
     if (!sound) {
-      Timber.debug(`Sound effect not available for type: ${type}`);
+      logger.d("Audio", `Sound effect not available for type: ${type}`);
       return;
     }
 
     return new Promise((resolve) => {
       sound.play((success) => {
         if (!success) {
-          Timber.warn(`Failed to play sound effect: ${type}`);
+          logger.w("Audio", `Failed to play sound effect: ${type}`);
         }
         resolve();
       });
@@ -194,7 +194,7 @@ class AudioService {
    */
   async speak(text: string, interrupt: boolean = false): Promise<void> {
     if (!this.isInitialized) {
-      Timber.warn('Audio service not initialized');
+      logger.w("Audio", 'Audio service not initialized');
       return;
     }
 
@@ -211,7 +211,7 @@ class AudioService {
         await Tts.speak(text);
       }
     } catch (error) {
-      Timber.error('Failed to speak text:', error);
+      logger.e("Audio", 'Failed to speak text:', error);
     }
   }
 
@@ -225,7 +225,7 @@ class AudioService {
         try {
           await Tts.speak(nextText);
         } catch (error) {
-          Timber.error('Failed to speak queued text:', error);
+          logger.e("Audio", 'Failed to speak queued text:', error);
           this.processNextSpeech(); // Try next item
         }
       }
@@ -246,7 +246,7 @@ class AudioService {
         sound.stop();
       });
     } catch (error) {
-      Timber.error('Failed to stop audio:', error);
+      logger.e("Audio", 'Failed to stop audio:', error);
     }
   }
 
@@ -301,7 +301,10 @@ class AudioService {
    */
   cleanup(): void {
     try {
-      Tts.removeAllListeners();
+      // Remove TTS listeners
+      Tts.removeAllListeners('tts-start');
+      Tts.removeAllListeners('tts-finish');
+      Tts.removeAllListeners('tts-cancel');
       
       Object.values(this.soundCache).forEach(sound => {
         sound.release();
@@ -312,9 +315,9 @@ class AudioService {
       this.isSpeaking = false;
       this.isInitialized = false;
       
-      Timber.info('Audio service cleaned up');
+      logger.i("Audio", 'Audio service cleaned up');
     } catch (error) {
-      Timber.error('Error during audio service cleanup:', error);
+      logger.e("Audio", 'Error during audio service cleanup:', error);
     }
   }
 }

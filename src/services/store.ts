@@ -166,6 +166,9 @@ export const {
   removeError,
 } = appSlice.actions;
 
+// Export the slice for testing
+export {appSlice};
+
 // Persist configuration
 const persistConfig = {
   key: 'fortniteassist',

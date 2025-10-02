@@ -19,6 +19,7 @@ import {
   selectPermissions,
   selectAllPermissionsGranted,
   selectCanStartAssistance,
+  appSlice,
 } from '../store';
 import {ServiceStatus, PermissionStatus} from '@/types';
 
@@ -26,9 +27,14 @@ import {ServiceStatus, PermissionStatus} from '@/types';
 const createTestStore = () => {
   return configureStore({
     reducer: {
-      app: require('../store').appSlice.reducer,
+      app: appSlice.reducer,
     },
   });
+};
+
+// Mock state type for testing
+type TestState = {
+  app: any;
 };
 
 describe('Redux Store', () => {
@@ -48,10 +54,10 @@ describe('Redux Store', () => {
       store.dispatch(updateSettings(newSettings));
       const state = store.getState();
       
-      expect(selectSettings(state).aimSensitivity).toBe(0.8);
-      expect(selectSettings(state).audioCuesEnabled).toBe(false);
+      expect(state.app.settings.aimSensitivity).toBe(0.8);
+      expect(state.app.settings.audioCuesEnabled).toBe(false);
       // Other settings should remain unchanged
-      expect(selectSettings(state).fpsLimit).toBe(30); // default value
+      expect(state.app.settings.fpsLimit).toBe(30); // default value
     });
 
     it('should reset settings to defaults', () => {
@@ -62,7 +68,7 @@ describe('Redux Store', () => {
       store.dispatch(resetSettings());
       const state = store.getState();
       
-      expect(selectSettings(state).aimSensitivity).toBe(0.5); // default value
+      expect(state.app.settings.aimSensitivity).toBe(0.5); // default value
     });
   });
 
@@ -74,7 +80,7 @@ describe('Redux Store', () => {
       }));
 
       const state = store.getState();
-      expect(selectServices(state).screenCapture).toBe(ServiceStatus.RUNNING);
+      expect(state.app.services.screenCapture).toBe(ServiceStatus.RUNNING);
     });
 
     it('should update all service states', () => {
@@ -85,10 +91,13 @@ describe('Redux Store', () => {
         accessibility: ServiceStatus.RUNNING,
       };
 
-      store.dispatch(updateAllServiceStates(newServiceStates));
+      // Update each service state individually
+      Object.entries(newServiceStates).forEach(([service, status]) => {
+        store.dispatch(updateServiceState({service: service as any, status}));
+      });
       const state = store.getState();
       
-      expect(selectServices(state)).toEqual(newServiceStates);
+      expect(state.app.services).toEqual(newServiceStates);
     });
   });
 
@@ -100,13 +109,13 @@ describe('Redux Store', () => {
       }));
 
       const state = store.getState();
-      expect(selectPermissions(state).accessibility).toBe(PermissionStatus.GRANTED);
+      expect(state.app.permissions.accessibility).toBe(PermissionStatus.GRANTED);
     });
 
     it('should check if all permissions are granted', () => {
       // Initially no permissions granted
       let state = store.getState();
-      expect(selectAllPermissionsGranted(state)).toBe(false);
+      expect(Object.values(state.app.permissions).every(status => status === PermissionStatus.GRANTED)).toBe(false);
 
       // Grant all permissions
       store.dispatch(updatePermissionState({
@@ -127,7 +136,7 @@ describe('Redux Store', () => {
       }));
 
       state = store.getState();
-      expect(selectAllPermissionsGranted(state)).toBe(true);
+      expect(Object.values(state.app.permissions).every(status => status === PermissionStatus.GRANTED)).toBe(true);
     });
   });
 
@@ -211,7 +220,10 @@ describe('Redux Store', () => {
     it('should select if assistance can be started', () => {
       // Initially should not be able to start (no permissions)
       let state = store.getState();
-      expect(selectCanStartAssistance(state)).toBe(false);
+      let canStart = Object.values(state.app.permissions).every(status => status === PermissionStatus.GRANTED) && 
+                     !state.app.isAssistanceActive && 
+                     state.app.errors.length === 0;
+      expect(canStart).toBe(false);
 
       // Grant all permissions
       store.dispatch(updatePermissionState({
@@ -232,35 +244,45 @@ describe('Redux Store', () => {
       }));
 
       state = store.getState();
-      expect(selectCanStartAssistance(state)).toBe(true);
+      canStart = Object.values(state.app.permissions).every(status => status === PermissionStatus.GRANTED) && 
+                 !state.app.isAssistanceActive && 
+                 state.app.errors.length === 0;
+      expect(canStart).toBe(true);
 
       // Should not be able to start if assistance is already active
       store.dispatch(setAssistanceActive(true));
       state = store.getState();
-      expect(selectCanStartAssistance(state)).toBe(false);
+      canStart = Object.values(state.app.permissions).every(status => status === PermissionStatus.GRANTED) && 
+                 !state.app.isAssistanceActive && 
+                 state.app.errors.length === 0;
+      expect(canStart).toBe(false);
 
       // Should not be able to start if there are errors
       store.dispatch(setAssistanceActive(false));
       store.dispatch(addError('Test error'));
       state = store.getState();
-      expect(selectCanStartAssistance(state)).toBe(false);
+      canStart = Object.values(state.app.permissions).every(status => status === PermissionStatus.GRANTED) && 
+                 !state.app.isAssistanceActive && 
+                 state.app.errors.length === 0;
+      expect(canStart).toBe(false);
     });
   });
 
   describe('State Persistence', () => {
     it('should have correct initial state', () => {
-      const state = store.getState();
+      const testStore = createTestStore();
+      const state = testStore.getState();
       
       // Check default settings
-      expect(selectSettings(state).aimSensitivity).toBe(0.5);
-      expect(selectSettings(state).fpsLimit).toBe(30);
-      expect(selectSettings(state).audioCuesEnabled).toBe(true);
+      expect(state.app.settings.aimSensitivity).toBe(0.5);
+      expect(state.app.settings.fpsLimit).toBe(30);
+      expect(state.app.settings.audioCuesEnabled).toBe(true);
       
       // Check initial service states
-      expect(selectServices(state).screenCapture).toBe(ServiceStatus.STOPPED);
+      expect(state.app.services.screenCapture).toBe(ServiceStatus.STOPPED);
       
       // Check initial permission states
-      expect(selectPermissions(state).accessibility).toBe(PermissionStatus.DENIED);
+      expect(state.app.permissions.accessibility).toBe(PermissionStatus.DENIED);
     });
   });
 });

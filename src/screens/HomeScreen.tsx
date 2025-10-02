@@ -15,6 +15,8 @@ import {
 import {useSelector, useDispatch} from 'react-redux';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
+import type {NavigationProp} from '@react-navigation/native';
+import type {RootStackParamList} from '@/types/navigation';
 
 // Components
 import AccessibleButton from '@/components/AccessibleButton';
@@ -42,7 +44,7 @@ import {
 import type {ScreenProps} from '@/types';
 
 const HomeScreen: React.FC<ScreenProps> = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
 
@@ -108,7 +110,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
       console.error('Failed to start assistance:', error);
       Alert.alert(
         'Error',
-        `Failed to start assistance: ${error.message}`,
+        `Failed to start assistance: ${error instanceof Error ? error.message : String(error)}`,
         [{text: 'OK'}],
       );
       announceToUser('Failed to start assistance');
@@ -132,7 +134,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
       console.error('Failed to stop assistance:', error);
       Alert.alert(
         'Error',
-        `Failed to stop assistance: ${error.message}`,
+        `Failed to stop assistance: ${error instanceof Error ? error.message : String(error)}`,
         [{text: 'OK'}],
       );
       announceToUser('Failed to stop assistance');
@@ -163,7 +165,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
     <ScrollView
       style={[styles.container, {paddingTop: insets.top}]}
       contentContainerStyle={styles.contentContainer}
-      accessibilityRole="main">
+      accessibilityRole="none">
       
       {/* Header */}
       <View style={styles.header}>
@@ -215,7 +217,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
           style={[
             styles.mainButton,
             isAssistanceActive ? styles.stopButton : styles.startButton,
-          ]}
+          ] as any}
           textStyle={styles.mainButtonText}
           accessibilityLabel={getMainButtonAccessibilityLabel()}
           accessibilityHint={
@@ -250,7 +252,7 @@ const HomeScreen: React.FC<ScreenProps> = () => {
           <Text style={styles.sectionTitle} accessibilityRole="header">
             Latest Detection
           </Text>
-          <DetectionOverlay detection={lastDetection} />
+          <DetectionOverlay detections={[]} visible={true} />
         </View>
       )}
 

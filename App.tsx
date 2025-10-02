@@ -91,8 +91,7 @@ const App: React.FC = () => {
                       fontWeight: 'bold',
                       fontSize: 18,
                     },
-                    // Accessibility improvements
-                    headerTitleAccessibilityRole: 'header',
+                    // Accessibility improvements removed - not supported by React Navigation
                     gestureEnabled: true,
                     cardStyleInterpolator: ({current, layouts}) => {
                       return {
@@ -114,7 +113,6 @@ const App: React.FC = () => {
                     component={HomeScreen}
                     options={{
                       title: 'FortniteAssist',
-                      headerAccessibilityLabel: 'FortniteAssist Home Screen',
                     }}
                   />
                   <Stack.Screen
@@ -122,7 +120,6 @@ const App: React.FC = () => {
                     component={SettingsScreen}
                     options={{
                       title: 'Settings',
-                      headerAccessibilityLabel: 'Settings Screen',
                     }}
                   />
                   <Stack.Screen
@@ -130,7 +127,6 @@ const App: React.FC = () => {
                     component={PermissionsScreen}
                     options={{
                       title: 'Permissions',
-                      headerAccessibilityLabel: 'Permissions Setup Screen',
                     }}
                   />
                   <Stack.Screen
@@ -138,7 +134,6 @@ const App: React.FC = () => {
                     component={HelpScreen}
                     options={{
                       title: 'Help & Tutorial',
-                      headerAccessibilityLabel: 'Help and Tutorial Screen',
                     }}
                   />
                   <Stack.Screen
@@ -146,7 +141,6 @@ const App: React.FC = () => {
                     component={AboutScreen}
                     options={{
                       title: 'About',
-                      headerAccessibilityLabel: 'About FortniteAssist Screen',
                     }}
                   />
                   <Stack.Screen
@@ -154,7 +148,6 @@ const App: React.FC = () => {
                     component={DiagnosticsScreen}
                     options={{
                       title: 'Diagnostics',
-                      headerAccessibilityLabel: 'System Diagnostics Screen',
                     }}
                   />
                 </Stack.Navigator>

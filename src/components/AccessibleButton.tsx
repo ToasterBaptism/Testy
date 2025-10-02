@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import {selectSettings} from '@/services/store';
-import {triggerHapticFeedback} from '@/services/haptics';
+import {triggerHapticFeedback, HapticType} from '@/services/haptics';
 
 interface AccessibleButtonProps {
   title: string;
@@ -48,7 +48,7 @@ const AccessibleButton: React.FC<AccessibleButtonProps> = ({
 
     // Trigger haptic feedback if enabled
     if (settings.hapticFeedbackEnabled) {
-      triggerHapticFeedback('light');
+      triggerHapticFeedback(HapticType.IMPACT_LIGHT);
     }
 
     onPress();
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
 
   // Accessibility enhancements
-  largeText: {
+  extraLargeText: {
     fontSize: 20,
   },
 

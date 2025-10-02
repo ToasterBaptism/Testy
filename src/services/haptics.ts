@@ -5,7 +5,7 @@
 
 import HapticFeedback from 'react-native-haptic-feedback';
 import {Vibration} from 'react-native';
-import Timber from './logging';
+import logger from './logging';
 
 // Haptic feedback types
 export enum HapticType {
@@ -50,7 +50,7 @@ class HapticsService {
    */
   async initialize(): Promise<void> {
     try {
-      Timber.info('Initializing haptics service...');
+      logger.i("Haptics", 'Initializing haptics service...');
 
       // Check if haptic feedback is supported
       this.isHapticsSupported = await this.checkHapticSupport();
@@ -60,13 +60,43 @@ class HapticsService {
 
       this.isInitialized = true;
       
-      Timber.info('Haptics service initialized', {
+      logger.i("Haptics", 'Haptics service initialized', {
         hapticsSupported: this.isHapticsSupported,
         vibrationSupported: this.isVibrationSupported,
       });
     } catch (error) {
-      Timber.error('Failed to initialize haptics service:', error);
+      logger.e("Haptics", 'Failed to initialize haptics service:', error);
       // Don't throw - app can work without haptics
+    }
+  }
+
+  /**
+   * Convert our HapticType enum to the expected string values
+   */
+  private convertHapticType(type: HapticType): string {
+    switch (type) {
+      case HapticType.LIGHT:
+      case HapticType.IMPACT_LIGHT:
+        return 'impactLight';
+      case HapticType.MEDIUM:
+      case HapticType.IMPACT_MEDIUM:
+        return 'impactMedium';
+      case HapticType.HEAVY:
+      case HapticType.IMPACT_HEAVY:
+        return 'impactHeavy';
+      case HapticType.SUCCESS:
+      case HapticType.NOTIFICATION_SUCCESS:
+        return 'notificationSuccess';
+      case HapticType.WARNING:
+      case HapticType.NOTIFICATION_WARNING:
+        return 'notificationWarning';
+      case HapticType.ERROR:
+      case HapticType.NOTIFICATION_ERROR:
+        return 'notificationError';
+      case HapticType.SELECTION:
+        return 'selection';
+      default:
+        return 'impactLight';
     }
   }
 
@@ -82,7 +112,7 @@ class HapticsService {
       });
       return true;
     } catch (error) {
-      Timber.debug('Haptic feedback not supported:', error);
+      logger.d("Haptics", 'Haptic feedback not supported:', error);
       return false;
     }
   }
@@ -95,7 +125,7 @@ class HapticsService {
       // Vibration is generally supported on Android
       return true;
     } catch (error) {
-      Timber.debug('Vibration not supported:', error);
+      logger.d("Haptics", 'Vibration not supported:', error);
       return false;
     }
   }
@@ -105,7 +135,7 @@ class HapticsService {
    */
   async triggerHaptic(type: HapticType): Promise<void> {
     if (!this.isInitialized) {
-      Timber.warn('Haptics service not initialized');
+      logger.w("Haptics", 'Haptics service not initialized');
       return;
     }
 
@@ -116,14 +146,16 @@ class HapticsService {
           ignoreAndroidSystemSettings: false,
         };
 
-        HapticFeedback.trigger(type, options);
-        Timber.debug(`Triggered haptic feedback: ${type}`);
+        // Convert our enum to the expected string values
+        const hapticType = this.convertHapticType(type);
+        HapticFeedback.trigger(hapticType as any, options);
+        logger.d("Haptics", `Triggered haptic feedback: ${type}`);
       } else if (this.isVibrationSupported) {
         // Fallback to basic vibration
         this.triggerVibration('BUTTON_PRESS');
       }
     } catch (error) {
-      Timber.error('Failed to trigger haptic feedback:', error);
+      logger.e("Haptics", 'Failed to trigger haptic feedback:', error);
     }
   }
 
@@ -139,10 +171,10 @@ class HapticsService {
       const pattern = VIBRATION_PATTERNS[patternName];
       if (pattern) {
         Vibration.vibrate(pattern);
-        Timber.debug(`Triggered vibration pattern: ${patternName}`);
+        logger.d("Haptics", `Triggered vibration pattern: ${patternName}`);
       }
     } catch (error) {
-      Timber.error('Failed to trigger vibration:', error);
+      logger.e("Haptics", 'Failed to trigger vibration:', error);
     }
   }
 
@@ -281,9 +313,9 @@ class HapticsService {
   stopAll(): void {
     try {
       Vibration.cancel();
-      Timber.debug('Stopped all haptic feedback');
+      logger.d("Haptics", 'Stopped all haptic feedback');
     } catch (error) {
-      Timber.error('Failed to stop haptic feedback:', error);
+      logger.e("Haptics", 'Failed to stop haptic feedback:', error);
     }
   }
 
@@ -311,9 +343,9 @@ class HapticsService {
     try {
       this.stopAll();
       this.isInitialized = false;
-      Timber.info('Haptics service cleaned up');
+      logger.i("Haptics", 'Haptics service cleaned up');
     } catch (error) {
-      Timber.error('Error during haptics service cleanup:', error);
+      logger.e("Haptics", 'Error during haptics service cleanup:', error);
     }
   }
 }

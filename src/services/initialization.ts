@@ -16,7 +16,7 @@ import {ServiceStatus, PermissionStatus} from '@/types';
 import {checkPermissions} from './permissions';
 import {setupAudioFeedback} from './audio';
 import {setupHapticFeedback} from './haptics';
-import Timber from './logging';
+import logger from './logging';
 
 const {
   ScreenCaptureModule,
@@ -32,7 +32,7 @@ const {
  */
 export async function initializeServices(): Promise<void> {
   try {
-    Timber.info('🚀 Initializing FortniteAssist services...');
+    logger.i("Init", '🚀 Initializing FortniteAssist services...');
 
     // 1. Initialize logging
     await initializeLogging();
@@ -55,10 +55,10 @@ export async function initializeServices(): Promise<void> {
     // 7. Validate system readiness
     await validateSystemReadiness();
 
-    Timber.info('✅ All services initialized successfully');
+    logger.i("Init", '✅ All services initialized successfully');
   } catch (error) {
-    Timber.error('❌ Service initialization failed:', error);
-    store.dispatch(addError(`Initialization failed: ${error.message}`));
+    logger.e("Init", '❌ Service initialization failed:', error);
+    store.dispatch(addError(`Initialization failed: ${error instanceof Error ? error.message : String(error)}`));
     throw error;
   }
 }
@@ -67,7 +67,7 @@ export async function initializeServices(): Promise<void> {
  * Initialize logging system
  */
 async function initializeLogging(): Promise<void> {
-  Timber.info('📝 Initializing logging system...');
+  logger.i("Init", '📝 Initializing logging system...');
   // Logging is already initialized by importing Timber
 }
 
@@ -75,7 +75,7 @@ async function initializeLogging(): Promise<void> {
  * Initialize permissions
  */
 async function initializePermissions(): Promise<void> {
-  Timber.info('🔐 Checking permissions...');
+  logger.i("Init", '🔐 Checking permissions...');
 
   try {
     const permissions = await checkPermissions();
@@ -90,9 +90,9 @@ async function initializePermissions(): Promise<void> {
       );
     });
 
-    Timber.info('Permissions checked:', permissions);
+    logger.i("Init", 'Permissions checked:', permissions);
   } catch (error) {
-    Timber.error('Failed to check permissions:', error);
+    logger.e("Init", 'Failed to check permissions:', error);
     throw error;
   }
 }
@@ -101,7 +101,7 @@ async function initializePermissions(): Promise<void> {
  * Setup event listeners for native modules
  */
 function setupEventListeners(): void {
-  Timber.info('📡 Setting up event listeners...');
+  logger.i("Init", '📡 Setting up event listeners...');
 
   // Screen capture events
   DeviceEventEmitter.addListener(
@@ -113,7 +113,7 @@ function setupEventListeners(): void {
           status: ServiceStatus.RUNNING,
         }),
       );
-      Timber.info('Screen capture started');
+      logger.i("Init", 'Screen capture started');
     },
   );
 
@@ -126,7 +126,7 @@ function setupEventListeners(): void {
           status: ServiceStatus.STOPPED,
         }),
       );
-      Timber.info('Screen capture stopped');
+      logger.i("Init", 'Screen capture stopped');
     },
   );
 
@@ -140,7 +140,7 @@ function setupEventListeners(): void {
         }),
       );
       store.dispatch(addError(`Screen capture error: ${error.message}`));
-      Timber.error('Screen capture error:', error);
+      logger.e("Init", 'Screen capture error:', error);
     },
   );
 
@@ -154,7 +154,7 @@ function setupEventListeners(): void {
           status: ServiceStatus.RUNNING,
         }),
       );
-      Timber.info('AI model loaded:', data.modelName);
+      logger.i("Init", 'AI model loaded:', data.modelName);
     },
   );
 
@@ -168,7 +168,7 @@ function setupEventListeners(): void {
         }),
       );
       store.dispatch(addError(`AI model error: ${error.error}`));
-      Timber.error('AI model error:', error);
+      logger.e("Init", 'AI model error:', error);
     },
   );
 
@@ -190,14 +190,14 @@ function setupEventListeners(): void {
     },
   );
 
-  Timber.info('Event listeners setup complete');
+  logger.i("Init", 'Event listeners setup complete');
 }
 
 /**
  * Initialize native modules
  */
 async function initializeNativeModules(): Promise<void> {
-  Timber.info('🔧 Initializing native modules...');
+  logger.i("Init", '🔧 Initializing native modules...');
 
   try {
     // Check if modules are available
@@ -222,9 +222,9 @@ async function initializeNativeModules(): Promise<void> {
       initializeAccessibility(),
     ]);
 
-    Timber.info('Native modules initialized successfully');
+    logger.i("Init", 'Native modules initialized successfully');
   } catch (error) {
-    Timber.error('Failed to initialize native modules:', error);
+    logger.e("Init", 'Failed to initialize native modules:', error);
     throw error;
   }
 }
@@ -251,7 +251,7 @@ async function initializeScreenCapture(): Promise<void> {
       }),
     );
 
-    Timber.info('Screen capture module initialized');
+    logger.i("Init", 'Screen capture module initialized');
   } catch (error) {
     store.dispatch(
       updateServiceState({
@@ -285,7 +285,7 @@ async function initializeAIInference(): Promise<void> {
       }),
     );
 
-    Timber.info('AI inference module initialized');
+    logger.i("Init", 'AI inference module initialized');
   } catch (error) {
     store.dispatch(
       updateServiceState({
@@ -320,7 +320,7 @@ async function initializeInputSimulation(): Promise<void> {
       }),
     );
 
-    Timber.info('Input simulation module initialized');
+    logger.i("Init", 'Input simulation module initialized');
   } catch (error) {
     store.dispatch(
       updateServiceState({
@@ -354,7 +354,7 @@ async function initializeAccessibility(): Promise<void> {
       }),
     );
 
-    Timber.info('Accessibility module initialized');
+    logger.i("Init", 'Accessibility module initialized');
   } catch (error) {
     store.dispatch(
       updateServiceState({
@@ -370,13 +370,13 @@ async function initializeAccessibility(): Promise<void> {
  * Setup feedback systems
  */
 async function setupFeedbackSystems(): Promise<void> {
-  Timber.info('🔊 Setting up feedback systems...');
+  logger.i("Init", '🔊 Setting up feedback systems...');
 
   try {
     await Promise.all([setupAudioFeedback(), setupHapticFeedback()]);
-    Timber.info('Feedback systems setup complete');
+    logger.i("Init", 'Feedback systems setup complete');
   } catch (error) {
-    Timber.error('Failed to setup feedback systems:', error);
+    logger.e("Init", 'Failed to setup feedback systems:', error);
     // Non-critical error, don't throw
   }
 }
@@ -385,15 +385,15 @@ async function setupFeedbackSystems(): Promise<void> {
  * Load AI model
  */
 async function loadAIModel(): Promise<void> {
-  Timber.info('🤖 Loading AI model...');
+  logger.i("Init", '🤖 Loading AI model...');
 
   try {
     const modelName = 'fortnite_detection_v1.tflite';
     await AIInferenceModule.loadModel(modelName);
-    Timber.info('AI model loaded successfully');
+    logger.i("Init", 'AI model loaded successfully');
   } catch (error) {
-    Timber.error('Failed to load AI model:', error);
-    store.dispatch(addError(`Failed to load AI model: ${error.message}`));
+    logger.e("Init", 'Failed to load AI model:', error);
+    store.dispatch(addError(`Failed to load AI model: ${error instanceof Error ? error.message : String(error)}`));
     // Don't throw - app can still function without AI
   }
 }
@@ -402,7 +402,7 @@ async function loadAIModel(): Promise<void> {
  * Validate system readiness
  */
 async function validateSystemReadiness(): Promise<void> {
-  Timber.info('✅ Validating system readiness...');
+  logger.i("Init", '✅ Validating system readiness...');
 
   const state = store.getState();
   const {services, permissions} = state.app;
@@ -426,18 +426,18 @@ async function validateSystemReadiness(): Promise<void> {
   );
 
   if (missingPermissions.length > 0) {
-    Timber.warn(`Missing permissions: ${missingPermissions.join(', ')}`);
+    logger.w("Init", `Missing permissions: ${missingPermissions.join(', ')}`);
     // Don't throw - user can grant permissions later
   }
 
-  Timber.info('System readiness validation complete');
+  logger.i("Init", 'System readiness validation complete');
 }
 
 /**
  * Cleanup services on app shutdown
  */
 export async function cleanupServices(): Promise<void> {
-  Timber.info('🧹 Cleaning up services...');
+  logger.i("Init", '🧹 Cleaning up services...');
 
   try {
     // Stop all services
@@ -449,8 +449,8 @@ export async function cleanupServices(): Promise<void> {
     // Remove event listeners
     DeviceEventEmitter.removeAllListeners();
 
-    Timber.info('Services cleanup complete');
+    logger.i("Init", 'Services cleanup complete');
   } catch (error) {
-    Timber.error('Error during cleanup:', error);
+    logger.e("Init", 'Error during cleanup:', error);
   }
 }

@@ -4,7 +4,7 @@
  */
 
 import {AccessibilityInfo, Alert} from 'react-native';
-import {logger} from './logging';
+import logger from './logging';
 
 export interface AccessibilitySettings {
   screenReaderEnabled: boolean;
@@ -36,17 +36,17 @@ class AccessibilityService {
         'screenReaderChanged',
         (isEnabled: boolean) => {
           this.settings.screenReaderEnabled = isEnabled;
-          logger.info(`Screen reader ${isEnabled ? 'enabled' : 'disabled'}`);
+          logger.i("Accessibility", `Screen reader ${isEnabled ? 'enabled' : 'disabled'}`);
         }
       );
 
       this.listeners.push(() => listener?.remove());
 
-      logger.info('Accessibility service initialized', {
+      logger.i("Accessibility", 'Accessibility service initialized', {
         screenReaderEnabled: this.settings.screenReaderEnabled,
       });
     } catch (error) {
-      logger.error('Failed to initialize accessibility service', error);
+      logger.e("Accessibility", 'Failed to initialize accessibility service', error);
     }
   }
 
@@ -56,7 +56,7 @@ class AccessibilityService {
 
   updateSettings(newSettings: Partial<AccessibilitySettings>): void {
     this.settings = {...this.settings, ...newSettings};
-    logger.info('Accessibility settings updated', newSettings);
+    logger.i("Accessibility", 'Accessibility settings updated', newSettings);
   }
 
   announceForScreenReader(message: string): void {
@@ -76,7 +76,7 @@ class AccessibilityService {
       const screenReaderEnabled = await AccessibilityInfo.isScreenReaderEnabled();
       return screenReaderEnabled;
     } catch (error) {
-      logger.error('Failed to check accessibility permissions', error);
+      logger.e("Accessibility", 'Failed to check accessibility permissions', error);
       return false;
     }
   }
@@ -102,7 +102,7 @@ class AccessibilityService {
   cleanup(): void {
     this.listeners.forEach(removeListener => removeListener());
     this.listeners = [];
-    logger.info('Accessibility service cleaned up');
+    logger.i("Accessibility", 'Accessibility service cleaned up');
   }
 }
 

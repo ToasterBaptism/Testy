@@ -7,7 +7,7 @@ import React, {Component, ReactNode} from 'react';
 import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import AccessibleButton from './AccessibleButton';
 import {announceToUser} from '@/services/audio';
-import Timber from '@/services/logging';
+import logger from '@/services/logging';
 
 interface Props {
   children: ReactNode;
@@ -41,13 +41,13 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error details
-    Timber.error('React Error Boundary caught an error:', error);
-    Timber.error('Error Info:', errorInfo);
+    logger.e('ErrorBoundary', 'React Error Boundary caught an error:', error);
+    logger.e('ErrorBoundary', 'Error Info:', errorInfo);
 
     // Update state with error info
     this.setState({
       error,
-      errorInfo: errorInfo.componentStack,
+      errorInfo: errorInfo?.componentStack || null,
     });
 
     // Announce error to screen readers
@@ -71,7 +71,7 @@ class ErrorBoundary extends Component<Props, State> {
     
     // In a real app, this would send error reports to a crash reporting service
     // For now, we'll just log it
-    Timber.error('User requested error report:', {
+    logger.e('ErrorBoundary', 'User requested error report:', {
       error: error?.toString(),
       stack: error?.stack,
       componentStack: errorInfo,
@@ -93,7 +93,7 @@ class ErrorBoundary extends Component<Props, State> {
         <ScrollView
           style={styles.container}
           contentContainerStyle={styles.contentContainer}
-          accessibilityRole="main">
+          accessibilityRole="none">
           
           <View style={styles.header}>
             <View style={styles.iconContainer}>

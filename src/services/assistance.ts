@@ -3,7 +3,7 @@
  * Main service that coordinates AI detection, aim guidance, and input simulation
  */
 
-import {logger} from './logging';
+import logger from './logging';
 import {announceToUser} from './audio';
 
 export interface AssistanceState {
@@ -22,7 +22,7 @@ class AssistanceService {
 
   async initialize(): Promise<void> {
     try {
-      logger.info('Initializing assistance service');
+      logger.i("Assistance", 'Initializing assistance service');
       
       // Initialize AI models, screen capture, etc.
       // This would normally load the AI model and set up services
@@ -30,11 +30,11 @@ class AssistanceService {
       this.state.isInitialized = true;
       this.notifyListeners();
       
-      logger.info('Assistance service initialized successfully');
+      logger.i("Assistance", 'Assistance service initialized successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.state.lastError = errorMessage;
-      logger.error('Failed to initialize assistance service', error);
+      logger.e("Assistance", 'Failed to initialize assistance service', error);
       throw error;
     }
   }
@@ -50,7 +50,7 @@ class AssistanceService {
     }
 
     try {
-      logger.info('Starting assistance service');
+      logger.i("Assistance", 'Starting assistance service');
       
       // Start screen capture
       // Start AI inference
@@ -61,12 +61,12 @@ class AssistanceService {
       this.notifyListeners();
       
       announceToUser('Assistance started');
-      logger.info('Assistance service started successfully');
+      logger.i("Assistance", 'Assistance service started successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.state.lastError = errorMessage;
       this.notifyListeners();
-      logger.error('Failed to start assistance service', error);
+      logger.e("Assistance", 'Failed to start assistance service', error);
       throw error;
     }
   }
@@ -78,7 +78,7 @@ class AssistanceService {
     }
 
     try {
-      logger.info('Stopping assistance service');
+      logger.i("Assistance", 'Stopping assistance service');
       
       // Stop screen capture
       // Stop AI inference
@@ -89,12 +89,12 @@ class AssistanceService {
       this.notifyListeners();
       
       announceToUser('Assistance stopped');
-      logger.info('Assistance service stopped successfully');
+      logger.i("Assistance", 'Assistance service stopped successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.state.lastError = errorMessage;
       this.notifyListeners();
-      logger.error('Failed to stop assistance service', error);
+      logger.e("Assistance", 'Failed to stop assistance service', error);
       throw error;
     }
   }
@@ -118,7 +118,7 @@ class AssistanceService {
       try {
         listener(this.state);
       } catch (error) {
-        logger.error('Error in assistance service listener', error);
+        logger.e("Assistance", 'Error in assistance service listener', error);
       }
     });
   }
@@ -126,12 +126,12 @@ class AssistanceService {
   cleanup(): void {
     if (this.state.isActive) {
       this.stop().catch(error => {
-        logger.error('Error stopping assistance service during cleanup', error);
+        logger.e("Assistance", 'Error stopping assistance service during cleanup', error);
       });
     }
     this.listeners = [];
     this.state.isInitialized = false;
-    logger.info('Assistance service cleaned up');
+    logger.i("Assistance", 'Assistance service cleaned up');
   }
 }
 

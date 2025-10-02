@@ -588,3 +588,74 @@ class AIInferenceService(private val context: Context) {
         }
     }
 }
+
+/**
+ * Aim guidance calculator for predictive targeting
+ */
+class AimGuidanceCalculator {
+    
+    /**
+     * Calculate optimal aim guidance for detected enemies
+     */
+    fun calculateAimGuidance(
+        enemies: List<EnemyDetection>,
+        frameWidth: Int,
+        frameHeight: Int,
+        currentAimPoint: PointF? = null
+    ): AimGuidance? {
+        if (enemies.isEmpty()) return null
+        
+        // Select highest priority target
+        val target = enemies.maxByOrNull { enemy ->
+            when (calculatePriority(enemy)) {
+                AimPriority.HIGH -> 3f
+                AimPriority.MEDIUM -> 2f
+                AimPriority.LOW -> 1f
+                AimPriority.NONE -> 0f
+            } * enemy.confidence
+        } ?: return null
+        
+        // Calculate target point (center of bounding box, slightly adjusted for head)
+        val targetPoint = PointF(
+            target.boundingBox.centerX(),
+            target.boundingBox.top + (target.boundingBox.height() * 0.2f) // Aim slightly higher
+        )
+        
+        // Calculate aim vector from current position
+        val aimVector = currentAimPoint?.let { current ->
+            PointF(
+                targetPoint.x - current.x,
+                targetPoint.y - current.y
+            )
+        } ?: PointF(0f, 0f)
+        
+        // Simple motion prediction (can be enhanced with Kalman filter)
+        val predictedMovement = predictMovement(target)
+        
+        // Basic recoil compensation (weapon-specific in real implementation)
+        val recoilCompensation = PointF(0f, -2f) // Slight upward compensation
+        
+        return AimGuidance(
+            targetPoint = targetPoint,
+            aimVector = aimVector,
+            confidence = target.confidence,
+            predictedMovement = predictedMovement,
+            recoilCompensation = recoilCompensation,
+            priority = calculatePriority(target)
+        )
+    }
+    
+    private fun predictMovement(enemy: EnemyDetection): PointF {
+        // Simple prediction - in real implementation, use velocity tracking
+        return PointF(0f, 0f)
+    }
+    
+    private fun calculatePriority(enemy: EnemyDetection): AimPriority {
+        val distance = enemy.distance ?: Float.MAX_VALUE
+        return when {
+            distance < 20f && enemy.confidence > 0.8f -> AimPriority.HIGH
+            distance < 50f && enemy.confidence > 0.6f -> AimPriority.MEDIUM
+            else -> AimPriority.LOW
+        }
+    }
+}

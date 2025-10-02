@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,106 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  NativeModules,
 } from 'react-native';
 
+const {PermissionsModule} = NativeModules;
+
+interface PermissionStatus {
+  [key: string]: boolean;
+}
+
 const PermissionsScreen: React.FC = () => {
-  const handleRequestPermission = (permission: string) => {
-    Alert.alert(
-      'Permission Required',
-      `This app needs ${permission} permission to function properly.`,
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {text: 'Grant', onPress: () => console.log(`Requesting ${permission}`)},
-      ]
-    );
+  const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>({});
+  const [loading, setLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkAllPermissions();
+  }, []);
+
+  const checkAllPermissions = async () => {
+    try {
+      // Check standard permissions
+      const permissions = [
+        'android.permission.RECORD_AUDIO',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.READ_EXTERNAL_STORAGE',
+      ];
+
+      const status: PermissionStatus = {};
+      for (const permission of permissions) {
+        status[permission] = await PermissionsModule.checkPermission(permission);
+      }
+
+      setPermissionStatus(status);
+    } catch (error) {
+      console.error('Failed to check permissions:', error);
+    }
+  };
+
+  const handleRequestStandardPermissions = async () => {
+    try {
+      setLoading('standard');
+      const permissions = [
+        'android.permission.RECORD_AUDIO',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.READ_EXTERNAL_STORAGE',
+      ];
+
+      const results = await PermissionsModule.requestPermissions(permissions);
+      setPermissionStatus(prev => ({...prev, ...results}));
+      
+      Alert.alert(
+        'Permissions Updated',
+        'Standard permissions have been processed.',
+        [{text: 'OK'}]
+      );
+    } catch (error) {
+      console.error('Failed to request permissions:', error);
+      Alert.alert('Error', 'Failed to request permissions');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleRequestOverlayPermission = async () => {
+    try {
+      setLoading('overlay');
+      const granted = await PermissionsModule.requestOverlayPermission();
+      
+      if (!granted) {
+        Alert.alert(
+          'Overlay Permission',
+          'Please enable "Display over other apps" permission for FortniteAssist in the settings that just opened.',
+          [{text: 'OK'}]
+        );
+      } else {
+        Alert.alert('Success', 'Overlay permission is already granted!');
+      }
+    } catch (error) {
+      console.error('Failed to request overlay permission:', error);
+      Alert.alert('Error', 'Failed to request overlay permission');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleRequestAccessibilityPermission = async () => {
+    try {
+      setLoading('accessibility');
+      await PermissionsModule.requestAccessibilityPermission();
+      
+      Alert.alert(
+        'Accessibility Permission',
+        'Please enable FortniteAssist in the Accessibility settings that just opened. Look for "FortniteAssist" in the list and turn it on.',
+        [{text: 'OK'}]
+      );
+    } catch (error) {
+      console.error('Failed to request accessibility permission:', error);
+      Alert.alert('Error', 'Failed to request accessibility permission');
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -31,18 +119,30 @@ const PermissionsScreen: React.FC = () => {
       </Text>
 
       <View style={styles.permissionItem}>
-        <Text style={styles.permissionTitle}>Screen Capture</Text>
+        <Text style={styles.permissionTitle}>Standard Permissions</Text>
         <Text style={styles.permissionDescription}>
-          Required to analyze game screen for enemy detection and aim assistance.
+          Audio recording, storage access, and notifications for core functionality.
         </Text>
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => handleRequestPermission('Screen Capture')}
+          style={[styles.button, loading === 'standard' && styles.buttonDisabled]}
+          onPress={handleRequestStandardPermissions}
+          disabled={loading === 'standard'}
           accessibilityRole="button"
-          accessibilityLabel="Request screen capture permission"
+          accessibilityLabel="Request standard permissions"
         >
-          <Text style={styles.buttonText}>Request Permission</Text>
+          <Text style={styles.buttonText}>
+            {loading === 'standard' ? 'Requesting...' : 'Grant Permissions'}
+          </Text>
         </TouchableOpacity>
+        {Object.keys(permissionStatus).length > 0 && (
+          <View style={styles.statusContainer}>
+            {Object.entries(permissionStatus).map(([permission, granted]) => (
+              <Text key={permission} style={[styles.statusText, granted ? styles.granted : styles.denied]}>
+                {permission.split('.').pop()}: {granted ? '✓ Granted' : '✗ Denied'}
+              </Text>
+            ))}
+          </View>
+        )}
       </View>
 
       <View style={styles.permissionItem}>
@@ -51,12 +151,15 @@ const PermissionsScreen: React.FC = () => {
           Required to simulate touch inputs for aim assistance and game actions.
         </Text>
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => handleRequestPermission('Accessibility Service')}
+          style={[styles.button, loading === 'accessibility' && styles.buttonDisabled]}
+          onPress={handleRequestAccessibilityPermission}
+          disabled={loading === 'accessibility'}
           accessibilityRole="button"
           accessibilityLabel="Request accessibility service permission"
         >
-          <Text style={styles.buttonText}>Request Permission</Text>
+          <Text style={styles.buttonText}>
+            {loading === 'accessibility' ? 'Opening Settings...' : 'Enable Accessibility'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -66,12 +169,15 @@ const PermissionsScreen: React.FC = () => {
           Required to display debug information and aim guidance overlay.
         </Text>
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => handleRequestPermission('Overlay')}
+          style={[styles.button, loading === 'overlay' && styles.buttonDisabled]}
+          onPress={handleRequestOverlayPermission}
+          disabled={loading === 'overlay'}
           accessibilityRole="button"
           accessibilityLabel="Request overlay permission"
         >
-          <Text style={styles.buttonText}>Request Permission</Text>
+          <Text style={styles.buttonText}>
+            {loading === 'overlay' ? 'Opening Settings...' : 'Enable Overlay'}
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -123,10 +229,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  buttonDisabled: {
+    backgroundColor: '#666666',
+    opacity: 0.6,
+  },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  statusContainer: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 5,
+  },
+  statusText: {
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  granted: {
+    color: '#4CAF50',
+  },
+  denied: {
+    color: '#F44336',
   },
 });
 

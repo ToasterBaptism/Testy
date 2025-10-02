@@ -95,7 +95,7 @@ const AboutScreen: React.FC<ScreenProps> = () => {
     <ScrollView
       style={[styles.container, {paddingTop: insets.top}]}
       contentContainerStyle={styles.contentContainer}
-      accessibilityRole="main">
+      accessibilityRole="none">
 
       {/* App Header */}
       <View style={styles.header}>

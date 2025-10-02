@@ -215,7 +215,7 @@ const SettingsScreen: React.FC<ScreenProps> = ({navigation}) => {
         step={step}
         minimumTrackTintColor="#1976D2"
         maximumTrackTintColor="#E0E0E0"
-        thumbStyle={{backgroundColor: '#1976D2'}}
+        thumbTintColor="#1976D2"
         accessible={true}
         accessibilityLabel={`${label} slider. Current value: ${formatValue ? formatValue(value) : value.toFixed(1)}`}
         accessibilityHint="Slide to adjust the value"
@@ -228,7 +228,7 @@ const SettingsScreen: React.FC<ScreenProps> = ({navigation}) => {
     <ScrollView
       style={[styles.container, {paddingTop: insets.top}]}
       contentContainerStyle={styles.contentContainer}
-      accessibilityRole="main">
+      accessibilityRole="none">
 
       {/* Performance Settings */}
       {renderSection(

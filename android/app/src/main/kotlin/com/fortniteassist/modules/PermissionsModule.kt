@@ -1,16 +1,31 @@
 package com.fortniteassist.modules
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.*
+import com.facebook.react.modules.core.PermissionAwareActivity
+import com.facebook.react.modules.core.PermissionListener
 import timber.log.Timber
 
 /**
  * React Native module for permissions management
  */
-class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), PermissionListener {
+
+    companion object {
+        private const val REQUEST_CODE_PERMISSIONS = 1001
+        private const val REQUEST_CODE_OVERLAY = 1002
+        private const val REQUEST_CODE_ACCESSIBILITY = 1003
+    }
+
+    private var permissionPromise: Promise? = null
 
     override fun getName(): String = "PermissionsModule"
 
@@ -46,21 +61,88 @@ class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBas
                 permissions.getString(i)?.let { permissionsList.add(it) }
             }
             
-            // This would typically trigger a permission request dialog
-            // For now, just return the current status
-            val results = WritableNativeMap()
-            for (permission in permissionsList) {
-                val granted = ContextCompat.checkSelfPermission(
-                    reactApplicationContext, 
-                    permission
-                ) == PackageManager.PERMISSION_GRANTED
-                results.putBoolean(permission, granted)
+            val activity = currentActivity
+            if (activity == null) {
+                promise.reject("NO_ACTIVITY", "No current activity available")
+                return
             }
             
-            promise.resolve(results)
+            // Check which permissions are not granted
+            val permissionsToRequest = permissionsList.filter { permission ->
+                ContextCompat.checkSelfPermission(reactApplicationContext, permission) != PackageManager.PERMISSION_GRANTED
+            }
+            
+            if (permissionsToRequest.isEmpty()) {
+                // All permissions already granted
+                val results = WritableNativeMap()
+                for (permission in permissionsList) {
+                    results.putBoolean(permission, true)
+                }
+                promise.resolve(results)
+                return
+            }
+            
+            // Store promise for callback
+            permissionPromise = promise
+            
+            // Request permissions
+            if (activity is PermissionAwareActivity) {
+                activity.requestPermissions(
+                    permissionsToRequest.toTypedArray(),
+                    REQUEST_CODE_PERMISSIONS,
+                    this
+                )
+            } else {
+                ActivityCompat.requestPermissions(
+                    activity,
+                    permissionsToRequest.toTypedArray(),
+                    REQUEST_CODE_PERMISSIONS
+                )
+            }
+            
         } catch (e: Exception) {
             Timber.e(e, "Failed to request permissions")
             promise.reject("REQUEST_ERROR", e.message)
+        }
+    }
+
+    @ReactMethod
+    fun requestOverlayPermission(promise: Promise) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Settings.canDrawOverlays(reactApplicationContext)) {
+                    promise.resolve(true)
+                    return
+                }
+                
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                    data = Uri.parse("package:${reactApplicationContext.packageName}")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                
+                reactApplicationContext.startActivity(intent)
+                promise.resolve(false) // User needs to manually grant
+            } else {
+                promise.resolve(true) // Not needed on older versions
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to request overlay permission")
+            promise.reject("OVERLAY_ERROR", e.message)
+        }
+    }
+    
+    @ReactMethod
+    fun requestAccessibilityPermission(promise: Promise) {
+        try {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            
+            reactApplicationContext.startActivity(intent)
+            promise.resolve(false) // User needs to manually grant
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to request accessibility permission")
+            promise.reject("ACCESSIBILITY_ERROR", e.message)
         }
     }
 
@@ -81,5 +163,31 @@ class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBas
             Timber.e(e, "Failed to get required permissions")
             promise.reject("GET_ERROR", e.message)
         }
+    }
+    
+    // PermissionListener implementation
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ): Boolean {
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            val promise = permissionPromise
+            if (promise != null) {
+                try {
+                    val results = WritableNativeMap()
+                    for (i in permissions.indices) {
+                        val granted = grantResults[i] == PackageManager.PERMISSION_GRANTED
+                        results.putBoolean(permissions[i], granted)
+                    }
+                    promise.resolve(results)
+                } catch (e: Exception) {
+                    promise.reject("CALLBACK_ERROR", e.message)
+                }
+                permissionPromise = null
+            }
+            return true
+        }
+        return false
     }
 }
