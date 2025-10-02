@@ -31,7 +31,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
             super().do_HEAD()
     
     def serve_homepage(self):
-        apk_path = "/workspace/project/Testy/fortnite-assist-permission-fixed.apk"
+        apk_path = "/workspace/project/Testy/fortnite-assist-overlay-permission-fixed.apk"
         
         if not os.path.exists(apk_path):
             self.send_error(404, "APK file not found")
@@ -101,7 +101,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
     <div class="container">
         <div class="header">
             <div class="logo">🎮 FortniteAssist</div>
-            <h1>Permission Fixed v1.1</h1>
+            <h1>Overlay Permission Fixed v1.2</h1>
             <p>Assistive Technology for Accessible Gaming</p>
         </div>
         
@@ -109,7 +109,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
             <h3>📦 APK Information</h3>
             <ul>
                 <li><strong>File Size:</strong> {file_size_mb:.1f} MB</li>
-                <li><strong>Version:</strong> Permission Fixed v1.1</li>
+                <li><strong>Version:</strong> Overlay Permission Fixed v1.2</li>
                 <li><strong>Android:</strong> API 34+ (Android 14+)</li>
                 <li><strong>Architecture:</strong> Universal (ARM64, x86_64)</li>
             </ul>
@@ -150,7 +150,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(html.encode('utf-8'))
     
     def serve_apk(self):
-        apk_path = "/workspace/project/Testy/fortnite-assist-permission-fixed.apk"
+        apk_path = "/workspace/project/Testy/fortnite-assist-overlay-permission-fixed.apk"
         
         if not os.path.exists(apk_path):
             self.send_error(404, "APK file not found")
@@ -160,7 +160,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
         
         self.send_response(200)
         self.send_header('Content-Type', 'application/vnd.android.package-archive')
-        self.send_header('Content-Disposition', 'attachment; filename="fortnite-assist-permission-fixed.apk"')
+        self.send_header('Content-Disposition', 'attachment; filename="fortnite-assist-overlay-permission-fixed.apk"')
         self.send_header('Content-Length', str(file_size))
         self.send_header('Cache-Control', 'no-cache')
         self.end_headers()
@@ -173,7 +173,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(chunk)
     
     def serve_apk_head(self):
-        apk_path = "/workspace/project/Testy/fortnite-assist-permission-fixed.apk"
+        apk_path = "/workspace/project/Testy/fortnite-assist-overlay-permission-fixed.apk"
         
         if not os.path.exists(apk_path):
             self.send_error(404, "APK file not found")
@@ -183,7 +183,7 @@ class APKHandler(http.server.SimpleHTTPRequestHandler):
         
         self.send_response(200)
         self.send_header('Content-Type', 'application/vnd.android.package-archive')
-        self.send_header('Content-Disposition', 'attachment; filename="fortnite-assist-permission-fixed.apk"')
+        self.send_header('Content-Disposition', 'attachment; filename="fortnite-assist-overlay-permission-fixed.apk"')
         self.send_header('Content-Length', str(file_size))
         self.send_header('Cache-Control', 'no-cache')
         self.end_headers()

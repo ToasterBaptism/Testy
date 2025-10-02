@@ -33,7 +33,18 @@ class PermissionsModule(reactContext: ReactApplicationContext) : ReactContextBas
     fun checkPermission(permission: String, promise: Promise) {
         try {
             val context = reactApplicationContext
-            val granted = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+            val granted = when (permission) {
+                "android.permission.SYSTEM_ALERT_WINDOW" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        Settings.canDrawOverlays(context)
+                    } else {
+                        true // Not needed on older versions
+                    }
+                }
+                else -> {
+                    ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+                }
+            }
             promise.resolve(granted)
         } catch (e: Exception) {
             Timber.e(e, "Failed to check permission: $permission")
