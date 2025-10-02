@@ -95,22 +95,3 @@ enum class BuildType {
     ROOF
 }
 
-/**
- * Action priority for queue management
- */
-enum class ActionPriority {
-    CRITICAL,   // Immediate actions like dodging
-    HIGH,       // Combat actions like aiming and firing
-    MEDIUM,     // Movement and positioning
-    LOW         // Non-essential actions like building
-}
-
-/**
- * Represents a queued action with metadata
- */
-data class QueuedAction(
-    val action: GameAction,
-    val priority: ActionPriority,
-    val timestamp: Long = System.currentTimeMillis(),
-    val maxDelay: Long = 1000L // Maximum delay before action expires
-)

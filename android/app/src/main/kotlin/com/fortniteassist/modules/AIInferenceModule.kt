@@ -111,7 +111,7 @@ class AIInferenceModule(reactContext: ReactApplicationContext) : ReactContextBas
                 putInt("inputWidth", modelInfo.inputWidth)
                 putInt("inputHeight", modelInfo.inputHeight)
                 putInt("numClasses", modelInfo.numClasses)
-                putDouble("confidenceThreshold", modelInfo.confidenceThreshold)
+                putDouble("confidenceThreshold", modelInfo.confidenceThreshold.toDouble())
                 putBoolean("supportsGpu", modelInfo.supportsGpu)
             }
             

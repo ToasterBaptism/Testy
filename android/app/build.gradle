@@ -3,6 +3,29 @@ apply plugin: "com.facebook.react"
 apply plugin: "kotlin-android"
 
 /**
+ * Set this to true to create four separate APKs instead of one,
+ * one for each native architecture. This is useful if you don't
+ * use App Bundles (https://developer.android.com/guide/app-bundle/)
+ * and want to have separate APKs to upload to the Play Store.
+ */
+def enableSeparateBuildPerCPUArchitecture = false
+
+/**
+ * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
+ */
+def enableProguardInReleaseBuilds = false
+
+/**
+ * The preferred build flavor of JavaScriptCore (JSC)
+ */
+def jscFlavor = 'org.webkit:android-jsc:+'
+
+/**
+ * Whether to enable the Hermes JS engine.
+ */
+def hermesEnabled = false
+
+/**
  * This is the configuration block to customize your React Native Android app.
  */
 react {
@@ -51,15 +74,14 @@ react {
 }
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    ndkVersion "25.1.8937393"
+    compileSdkVersion 35
 
     namespace "com.fortniteassist"
     defaultConfig {
         applicationId "com.fortniteassist"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion 24
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -88,12 +110,12 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     packagingOptions {
@@ -111,7 +133,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
     
     // AndroidX
-    implementation "androidx.core:core-ktx:1.12.0"
+    implementation "androidx.core:core-ktx:1.10.1"
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "androidx.constraintlayout:constraintlayout:2.1.4"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
@@ -155,10 +177,7 @@ dependencies {
         exclude group:'com.squareup.okhttp3', module:'okhttp'
     }
 
-    debugImplementation("com.facebook.react:hermes-executor-debug")
-    releaseImplementation("com.facebook.react:hermes-executor-release")
-
-    if (hermesEnabled.toBoolean()) {
+    if (hermesEnabled) {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor

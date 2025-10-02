@@ -95,6 +95,13 @@ assets/models/*.tflite
 assets/models/*.onnx
 assets/models/*.pb
 
+# Android SDK (too large for git)
+android-sdk/
+
+# APK files
+*.apk
+*.aab
+
 # Generated files
 android/app/src/main/assets/
 ios/main.jsbundle

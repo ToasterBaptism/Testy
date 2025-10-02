@@ -174,7 +174,7 @@ class EthicsGuardian(private val context: Context) {
 
         val record = ActionRecord(
             timestamp = System.currentTimeMillis(),
-            actionType = action.type.name,
+            actionType = action.toString(),
             confidence = confidence,
             wasSuccessful = wasSuccessful
         )

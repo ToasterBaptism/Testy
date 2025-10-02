@@ -6,11 +6,12 @@ import android.graphics.Path
 import android.graphics.PointF
 import android.view.accessibility.AccessibilityEvent
 import com.fortniteassist.data.GameAction
-import com.fortniteassist.data.QueuedAction
 import com.fortniteassist.utils.GestureUtils
 import kotlinx.coroutines.*
 import timber.log.Timber
-import java.util.concurrent.PriorityQueue
+import java.util.PriorityQueue
+import com.fortniteassist.data.QueuedAction
+import com.fortniteassist.data.ActionPriority
 
 /**
  * Accessibility Service that provides input simulation for FortniteAssist
@@ -85,7 +86,8 @@ class FortniteAssistAccessibilityService : AccessibilityService() {
         synchronized(actionQueue) {
             // Remove expired actions
             val currentTime = System.currentTimeMillis()
-            actionQueue.removeAll { it.timestamp + it.maxDelay < currentTime }
+            val expiredActions = actionQueue.filter { it.timestamp + it.maxDelay < currentTime }
+            actionQueue.removeAll(expiredActions.toSet())
             
             actionQueue.offer(action)
             Timber.d("Queued action: ${action.action::class.simpleName}, priority: ${action.priority}")
