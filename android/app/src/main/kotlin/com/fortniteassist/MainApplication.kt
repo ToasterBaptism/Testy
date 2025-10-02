@@ -23,7 +23,7 @@ class MainApplication : Application(), ReactApplication {
             override fun getPackages(): List<ReactPackage> =
                 PackageList(this).packages.apply {
                     // Add custom native modules here
-                    // add(FortniteAssistPackage()) // Temporarily disabled
+                    add(FortniteAssistPackage())
                 }
 
             override fun getJSMainModuleName(): String = "index"
