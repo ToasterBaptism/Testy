@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- High contrast color scheme for accessibility -->
+    <color name="primary_color">#1976D2</color>
+    <color name="primary_dark_color">#0D47A1</color>
+    <color name="accent_color">#FF5722</color>
+    
+    <!-- Text colors with high contrast ratios -->
+    <color name="text_primary">#000000</color>
+    <color name="text_secondary">#424242</color>
+    <color name="text_high_contrast">#FFFFFF</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    
+    <!-- Button colors -->
+    <color name="button_text">#FFFFFF</color>
+    <color name="button_background">#1976D2</color>
+    <color name="button_background_pressed">#0D47A1</color>
+    <color name="button_background_disabled">#BDBDBD</color>
+    
+    <!-- Background colors -->
+    <color name="background_primary">#FFFFFF</color>
+    <color name="background_secondary">#F5F5F5</color>
+    <color name="background_dark">#121212</color>
+    
+    <!-- Status colors -->
+    <color name="success_color">#4CAF50</color>
+    <color name="warning_color">#FF9800</color>
+    <color name="error_color">#F44336</color>
+    
+    <!-- AI detection overlay colors -->
+    <color name="enemy_detection_box">#FF0000</color>
+    <color name="weapon_detection_box">#00FF00</color>
+    <color name="aim_guidance_line">#FFFF00</color>
+    <color name="overlay_background">#80000000</color>
+</resources>

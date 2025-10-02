@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FortniteAssist</string>
+    <string name="accessibility_service_description">FortniteAssist provides aim guidance and input assistance for players with visual impairments or motor disabilities. This service captures screen content to detect game elements and provides adaptive input assistance. All processing occurs locally on your device for privacy.</string>
+    
+    <!-- Accessibility labels -->
+    <string name="start_assistance">Start Assistance</string>
+    <string name="stop_assistance">Stop Assistance</string>
+    <string name="settings">Settings</string>
+    <string name="help">Help</string>
+    <string name="about">About</string>
+    
+    <!-- Settings -->
+    <string name="sensitivity_setting">Aim Sensitivity</string>
+    <string name="fps_cap_setting">Frame Rate Limit</string>
+    <string name="roi_size_setting">Detection Area Size</string>
+    <string name="aim_smoothing_setting">Aim Smoothing</string>
+    <string name="audio_cues_setting">Audio Cues</string>
+    <string name="haptic_feedback_setting">Haptic Feedback</string>
+    
+    <!-- Notifications -->
+    <string name="service_running">FortniteAssist is running</string>
+    <string name="service_stopped">FortniteAssist stopped</string>
+    <string name="enemy_detected">Enemy detected</string>
+    <string name="aim_locked">Aim locked on target</string>
+    
+    <!-- Permissions -->
+    <string name="permission_accessibility_title">Accessibility Permission Required</string>
+    <string name="permission_accessibility_message">FortniteAssist needs accessibility permission to provide input assistance. This allows the app to simulate touch gestures based on AI detection.</string>
+    <string name="permission_screen_capture_title">Screen Capture Permission Required</string>
+    <string name="permission_screen_capture_message">FortniteAssist needs to capture your screen to detect game elements. All processing happens locally on your device.</string>
+    
+    <!-- Error messages -->
+    <string name="error_accessibility_not_enabled">Please enable accessibility service in Settings</string>
+    <string name="error_screen_capture_denied">Screen capture permission is required for the app to function</string>
+    <string name="error_model_loading_failed">Failed to load AI model</string>
+    <string name="error_performance_low">Performance is low, consider reducing settings</string>
+</resources>

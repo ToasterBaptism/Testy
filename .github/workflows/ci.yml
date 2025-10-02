@@ -1,0 +1,205 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run TypeScript check
+      run: npm run type-check
+      
+    - name: Run ESLint
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm run test:coverage
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+  kotlin-lint:
+    name: Kotlin Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Run Kotlin lint
+      run: |
+        cd android
+        ./gradlew ktlintCheck
+        
+    - name: Run Android unit tests
+      run: |
+        cd android
+        ./gradlew test
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run npm audit
+      run: npm audit --audit-level moderate
+      
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  accessibility-test:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run accessibility tests
+      run: npm run test -- --testPathPattern=accessibility
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, kotlin-lint]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build Android Debug APK
+      run: |
+        cd android
+        ./gradlew assembleDebug
+        
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: debug-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
+        
+    - name: Build Android Release APK (if main branch)
+      if: github.ref == 'refs/heads/main'
+      run: |
+        cd android
+        ./gradlew assembleRelease
+        
+    - name: Upload Release APK
+      if: github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-apk
+        path: android/app/build/outputs/apk/release/app-release.apk
+
+  ethics-compliance:
+    name: Ethics and Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for prohibited patterns
+      run: |
+        # Check for any patterns that might indicate cheating functionality
+        if grep -r "cheat\|hack\|exploit\|bypass" --include="*.kt" --include="*.ts" --include="*.tsx" --include="*.js" --exclude-dir=node_modules .; then
+          echo "❌ Found prohibited patterns that may indicate cheating functionality"
+          exit 1
+        else
+          echo "✅ No prohibited patterns found"
+        fi
+        
+    - name: Verify assistive technology markers
+      run: |
+        # Ensure assistive technology markers are present
+        if grep -r "assistive.technology\|accessibility.service\|visual.impairment" --include="*.md" --include="*.kt" --include="*.ts" .; then
+          echo "✅ Assistive technology markers found"
+        else
+          echo "❌ Missing assistive technology markers"
+          exit 1
+        fi
