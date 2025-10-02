@@ -10,6 +10,7 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.load
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.soloader.SoLoader
+import com.fortniteassist.capture.ScreenCaptureService
 import timber.log.Timber
 
 /**
@@ -17,6 +18,9 @@ import timber.log.Timber
  * Initializes React Native and core services
  */
 class MainApplication : Application(), ReactApplication {
+
+    // Core services
+    private var screenCaptureService: ScreenCaptureService? = null
 
     override val reactNativeHost: ReactNativeHost =
         object : DefaultReactNativeHost(this) {
@@ -60,6 +64,14 @@ class MainApplication : Application(), ReactApplication {
     
     private fun initializeServices() {
         Timber.d("Initializing core services...")
-        // Services will be initialized here in later phases
+        
+        // Initialize screen capture service
+        screenCaptureService = ScreenCaptureService(this)
+        Timber.d("Screen capture service initialized")
     }
+    
+    /**
+     * Get the screen capture service instance
+     */
+    fun getScreenCaptureService(): ScreenCaptureService? = screenCaptureService
 }

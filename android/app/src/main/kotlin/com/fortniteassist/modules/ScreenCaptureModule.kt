@@ -182,6 +182,51 @@ class ScreenCaptureModule(reactContext: ReactApplicationContext) : ReactContextB
     }
 
     /**
+     * Initialize screen capture module
+     */
+    @ReactMethod
+    fun initialize(promise: Promise) {
+        try {
+            // Screen capture service is already initialized in the module's initialize() method
+            Timber.d("Screen capture module initialized")
+            promise.resolve(true)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to initialize screen capture module")
+            promise.reject("INIT_ERROR", e.message, e)
+        }
+    }
+
+    /**
+     * Get the latest captured frame
+     */
+    @ReactMethod
+    fun getLatestFrame(promise: Promise) {
+        try {
+            val service = screenCaptureService
+            if (service == null) {
+                promise.reject("SERVICE_NULL", "Screen capture service not initialized")
+                return
+            }
+
+            val frame = service.getLatestFrame()
+            if (frame != null) {
+                // Convert bitmap to base64 or return frame info
+                val frameInfo = Arguments.createMap().apply {
+                    putInt("width", frame.width)
+                    putInt("height", frame.height)
+                    putDouble("timestamp", System.currentTimeMillis().toDouble())
+                }
+                promise.resolve(frameInfo)
+            } else {
+                promise.reject("NO_FRAME", "No frame available")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Exception in getLatestFrame")
+            promise.reject("EXCEPTION", e.message, e)
+        }
+    }
+
+    /**
      * Update capture settings
      */
     @ReactMethod

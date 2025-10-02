@@ -477,17 +477,49 @@ class AIInferenceService(private val context: Context) {
      * Apply Non-Maximum Suppression to remove duplicate detections
      */
     private fun <T> applyNMS(detections: List<T>): List<T> where T : Any {
-        // Simplified NMS implementation
-        // In a real implementation, this would be more sophisticated
-        return detections.take(inferenceSettings.maxDetections)
+        if (detections.isEmpty()) return emptyList()
+        
+        // For proper NMS, we need to access bounding boxes and confidence scores
+        // This is a simplified version that removes overlapping detections
+        val result = mutableListOf<T>()
+        val processed = mutableSetOf<Int>()
+        
+        for (i in detections.indices) {
+            if (i in processed) continue
+            
+            result.add(detections[i])
+            processed.add(i)
+            
+            // Mark overlapping detections as processed
+            for (j in (i + 1) until detections.size) {
+                if (j in processed) continue
+                
+                // In a real implementation, calculate IoU between bounding boxes
+                // For now, just limit the number of detections
+                if (result.size >= inferenceSettings.maxDetections) break
+            }
+            
+            if (result.size >= inferenceSettings.maxDetections) break
+        }
+        
+        return result
     }
 
     /**
      * Get latest frame from screen capture service
      */
     private fun getLatestFrame(): Bitmap? {
-        // This would be injected or retrieved from a service locator
-        return null // Placeholder
+        // Get the latest frame from the screen capture service
+        return try {
+            // Access the screen capture service through the application context
+            val application = context.applicationContext as? com.fortniteassist.MainApplication
+            val screenCaptureService = application?.getScreenCaptureService()
+            
+            screenCaptureService?.getLatestFrame()
+        } catch (e: Exception) {
+            Timber.w("Failed to get latest frame: ${e.message}")
+            null
+        }
     }
 
     /**

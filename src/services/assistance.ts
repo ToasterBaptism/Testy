@@ -3,29 +3,70 @@
  * Main service that coordinates AI detection, aim guidance, and input simulation
  */
 
+import {NativeModules} from 'react-native';
 import logger from './logging';
 import {announceToUser} from './audio';
+
+const {ScreenCaptureModule, AIInferenceModule, InputSimulationModule} = NativeModules;
 
 export interface AssistanceState {
   isActive: boolean;
   isInitialized: boolean;
   lastError?: string;
+  detectionCount: number;
+  averageFps: number;
+  lastDetectionTime?: number;
+}
+
+export interface DetectionResult {
+  enemies: Array<{
+    boundingBox: {x: number; y: number; width: number; height: number};
+    confidence: number;
+    distance?: number;
+  }>;
+  weapons: Array<{
+    boundingBox: {x: number; y: number; width: number; height: number};
+    confidence: number;
+    weaponType: string;
+  }>;
+  aimGuidance?: {
+    targetPoint: {x: number; y: number};
+    aimVector: {x: number; y: number};
+    confidence: number;
+    priority: string;
+  };
+  timestamp: number;
+  frameWidth: number;
+  frameHeight: number;
 }
 
 class AssistanceService {
   private state: AssistanceState = {
     isActive: false,
     isInitialized: false,
+    detectionCount: 0,
+    averageFps: 0,
   };
 
   private listeners: Array<(state: AssistanceState) => void> = [];
+  private detectionListener?: (result: DetectionResult) => void;
+  private performanceInterval?: NodeJS.Timeout;
 
   async initialize(): Promise<void> {
     try {
       logger.i("Assistance", 'Initializing assistance service');
       
-      // Initialize AI models, screen capture, etc.
-      // This would normally load the AI model and set up services
+      // Initialize AI model
+      await AIInferenceModule.loadModel('fortnite_detection_demo.tflite');
+      logger.i("Assistance", 'AI model loaded successfully');
+      
+      // Initialize screen capture service
+      await ScreenCaptureModule.initialize();
+      logger.i("Assistance", 'Screen capture service initialized');
+      
+      // Initialize input simulation
+      await InputSimulationModule.initialize();
+      logger.i("Assistance", 'Input simulation initialized');
       
       this.state.isInitialized = true;
       this.notifyListeners();
@@ -52,12 +93,27 @@ class AssistanceService {
     try {
       logger.i("Assistance", 'Starting assistance service');
       
+      // Request screen capture permission
+      await ScreenCaptureModule.requestScreenCapturePermission();
+      logger.i("Assistance", 'Screen capture permission granted');
+      
       // Start screen capture
+      await ScreenCaptureModule.startCapture();
+      logger.i("Assistance", 'Screen capture started');
+      
+      // Set up detection callback
+      this.setupDetectionCallback();
+      
       // Start AI inference
-      // Enable input simulation
+      await AIInferenceModule.startContinuousInference();
+      logger.i("Assistance", 'AI inference started');
+      
+      // Start performance monitoring
+      this.startPerformanceMonitoring();
       
       this.state.isActive = true;
       this.state.lastError = undefined;
+      this.state.detectionCount = 0;
       this.notifyListeners();
       
       announceToUser('Assistance started');
@@ -67,6 +123,9 @@ class AssistanceService {
       this.state.lastError = errorMessage;
       this.notifyListeners();
       logger.e("Assistance", 'Failed to start assistance service', error);
+      
+      // Cleanup on failure
+      await this.cleanup();
       throw error;
     }
   }
@@ -80,9 +139,7 @@ class AssistanceService {
     try {
       logger.i("Assistance", 'Stopping assistance service');
       
-      // Stop screen capture
-      // Stop AI inference
-      // Disable input simulation
+      await this.cleanup();
       
       this.state.isActive = false;
       this.state.lastError = undefined;
@@ -97,6 +154,127 @@ class AssistanceService {
       logger.e("Assistance", 'Failed to stop assistance service', error);
       throw error;
     }
+  }
+
+  private async cleanup(): Promise<void> {
+    try {
+      // Stop performance monitoring
+      if (this.performanceInterval) {
+        clearInterval(this.performanceInterval);
+        this.performanceInterval = undefined;
+      }
+      
+      // Stop AI inference
+      await AIInferenceModule.stopContinuousInference();
+      logger.i("Assistance", 'AI inference stopped');
+      
+      // Stop screen capture
+      await ScreenCaptureModule.stopCapture();
+      logger.i("Assistance", 'Screen capture stopped');
+      
+      // Remove detection callback
+      this.detectionListener = undefined;
+      
+    } catch (error) {
+      logger.e("Assistance", 'Error during cleanup', error);
+    }
+  }
+
+  private setupDetectionCallback(): void {
+    this.detectionListener = (result: DetectionResult) => {
+      try {
+        this.state.detectionCount++;
+        this.state.lastDetectionTime = result.timestamp;
+        
+        // Process detection result
+        this.processDetectionResult(result);
+        
+        this.notifyListeners();
+      } catch (error) {
+        logger.e("Assistance", 'Error processing detection result', error);
+      }
+    };
+    
+    // Register callback with AI module
+    AIInferenceModule.setDetectionCallback(this.detectionListener);
+  }
+
+  private async processDetectionResult(result: DetectionResult): Promise<void> {
+    try {
+      // Log detection info
+      logger.d("Assistance", `Detected ${result.enemies.length} enemies, ${result.weapons.length} weapons`);
+      
+      // Process aim guidance if available
+      if (result.aimGuidance && result.enemies.length > 0) {
+        await this.executeAimGuidance(result.aimGuidance);
+      }
+      
+      // Process weapon detection for pickup assistance
+      if (result.weapons.length > 0) {
+        await this.processWeaponDetection(result.weapons);
+      }
+      
+    } catch (error) {
+      logger.e("Assistance", 'Error processing detection result', error);
+    }
+  }
+
+  private async executeAimGuidance(aimGuidance: DetectionResult['aimGuidance']): Promise<void> {
+    if (!aimGuidance) return;
+    
+    try {
+      // Calculate aim adjustment based on guidance
+      const aimVector = aimGuidance.aimVector;
+      const sensitivity = 0.5; // Configurable sensitivity
+      
+      // Apply smoothing to prevent jittery movements
+      const smoothedVector = {
+        x: aimVector.x * sensitivity,
+        y: aimVector.y * sensitivity,
+      };
+      
+      // Execute aim adjustment through input simulation
+      await InputSimulationModule.performAimAdjustment(
+        smoothedVector.x,
+        smoothedVector.y,
+        aimGuidance.confidence
+      );
+      
+      logger.d("Assistance", `Aim adjustment: (${smoothedVector.x.toFixed(2)}, ${smoothedVector.y.toFixed(2)})`);
+      
+    } catch (error) {
+      logger.e("Assistance", 'Error executing aim guidance', error);
+    }
+  }
+
+  private async processWeaponDetection(weapons: DetectionResult['weapons']): Promise<void> {
+    try {
+      // Find the closest high-value weapon
+      const priorityWeapon = weapons.find(weapon => 
+        weapon.confidence > 0.7 && 
+        ['ASSAULT_RIFLE', 'SNIPER_RIFLE', 'SHOTGUN'].includes(weapon.weaponType)
+      );
+      
+      if (priorityWeapon) {
+        logger.d("Assistance", `High-priority weapon detected: ${priorityWeapon.weaponType}`);
+        // Could implement weapon pickup assistance here
+      }
+      
+    } catch (error) {
+      logger.e("Assistance", 'Error processing weapon detection', error);
+    }
+  }
+
+  private startPerformanceMonitoring(): void {
+    this.performanceInterval = setInterval(async () => {
+      try {
+        const metrics = await AIInferenceModule.getPerformanceMetrics();
+        this.state.averageFps = metrics.averageFps || 0;
+        this.notifyListeners();
+      } catch (error) {
+        logger.e("Assistance", 'Error getting performance metrics', error);
+      }
+    }, 1000); // Update every second
   }
 
   getState(): AssistanceState {

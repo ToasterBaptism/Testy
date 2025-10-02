@@ -40,6 +40,20 @@ class FortniteAssistAccessibilityService : AccessibilityService() {
         private var instance: FortniteAssistAccessibilityService? = null
         
         fun getInstance(): FortniteAssistAccessibilityService? = instance
+        
+        fun isServiceEnabled(context: android.content.Context): Boolean {
+            return try {
+                val accessibilityManager = context.getSystemService(android.content.Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager
+                val enabledServices = android.provider.Settings.Secure.getString(
+                    context.contentResolver,
+                    android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                )
+                val serviceName = "${context.packageName}/${FortniteAssistAccessibilityService::class.java.name}"
+                enabledServices?.contains(serviceName) == true
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 
     override fun onCreate() {
@@ -77,6 +91,33 @@ class FortniteAssistAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {
         Timber.w("Accessibility service interrupted")
         stopActionProcessing()
+    }
+
+    /**
+     * Queue a game action for execution
+     */
+    fun queueAction(action: GameAction) {
+        val (x, y) = when (action) {
+            is GameAction.Aim -> Pair(action.targetPoint.x, action.targetPoint.y)
+            is GameAction.Fire -> Pair(0f, 0f) // Fire doesn't need coordinates
+            is GameAction.Scope -> Pair(0f, 0f) // Scope doesn't need coordinates
+            else -> Pair(0f, 0f)
+        }
+        
+        val queuedAction = QueuedAction(
+            action = action,
+            x = x,
+            y = y,
+            timestamp = System.currentTimeMillis(),
+            priority = when (action) {
+                is GameAction.Fire -> ActionPriority.HIGH
+                is GameAction.Aim -> ActionPriority.MEDIUM
+                is GameAction.Scope -> ActionPriority.LOW
+                else -> ActionPriority.LOW
+            },
+            maxDelay = 1000L // 1 second max delay
+        )
+        queueAction(queuedAction)
     }
 
     /**
